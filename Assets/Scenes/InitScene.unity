@@ -12464,6 +12464,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2006303929}
   - component: {fileID: 2006303928}
+  - component: {fileID: 2006303930}
   m_Layer: 0
   m_Name: SceneLoader
   m_TagString: Untagged
@@ -12486,6 +12487,7 @@ MonoBehaviour:
   raceSceneName: Assets/Level1/Scenes/Level1.unity
   menuSceneName: Scenes/InitScene
   backendBaseUrl: https://cars-racing-production.up.railway.app
+  sceneTransitionLoader: {fileID: 2006303930}
 --- !u!4 &2006303929
 Transform:
   m_ObjectHideFlags: 0
@@ -12501,6 +12503,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1911969252}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2006303930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2006303927}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca857a23bc63621429a1a9a2115d9919, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneTransitionLoader
+  loadingScreenPrefab: {fileID: 2538613371214352271, guid: de22ddc8fbc18f2419bfede79d656999, type: 3}
+  loadingScreenParent: {fileID: 2082741303}
+  minimumLoadingScreenTime: 0.15
 --- !u!1 &2021198238
 GameObject:
   m_ObjectHideFlags: 0

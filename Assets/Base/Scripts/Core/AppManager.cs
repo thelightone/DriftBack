@@ -22,10 +22,14 @@ public class AppManager : MonoBehaviour
     [Header("Backend")]
     [SerializeField] private string backendBaseUrl = "https://your-backend-url.com";
 
+    private static readonly float[] PaidInvoiceGarageRetryDelays = { 1f, 2f, 2f, 2f };
+
     private AppState _state;
     private TelegramBridge _telegramBridge;
     private BackendApi _backendApi;
     private GarageResponse _lastGarageResponse;
+    private Coroutine _invoiceRefreshCoroutine;
+    private int _invoiceBalanceSnapshot;
 
     private void Awake()
     {
@@ -772,6 +776,7 @@ public class AppManager : MonoBehaviour
                 if (view != null)
                     view.ShowStatus("Opening Stars invoice for coins bundle...");
 
+                _invoiceBalanceSnapshot = _state.SoftCurrency;
                 Debug.Log("Calling TelegramBridge.OpenInvoice for coins bundle...");
                 _telegramBridge.OpenInvoice(response.invoiceUrl, gameObject.name, nameof(OnInvoiceClosed));
                 done = true;
@@ -893,6 +898,56 @@ public class AppManager : MonoBehaviour
         Debug.Log("=== BUY CAR FLOW END ===");
     }
 
+    private IEnumerator RefreshGarageAfterPaidInvoiceFlow()
+    {
+        Debug.Log("=== PAID INVOICE REFRESH START ===");
+
+        int balanceBeforeInvoice = _invoiceBalanceSnapshot;
+        bool balanceUpdated = false;
+
+        for (int i = 0; i < PaidInvoiceGarageRetryDelays.Length; i++)
+        {
+            float delay = PaidInvoiceGarageRetryDelays[i];
+            int attemptNumber = i + 1;
+
+            ShowPurchaseStatus($"Payment received. Syncing balance ({attemptNumber}/{PaidInvoiceGarageRetryDelays.Length})...");
+
+            yield return new WaitForSecondsRealtime(delay);
+            yield return LoadGarageFlow();
+
+            SaveProfileCache();
+
+            if (_state.SoftCurrency != balanceBeforeInvoice)
+            {
+                balanceUpdated = true;
+                Debug.Log("Paid invoice refresh detected updated balance on attempt " + attemptNumber);
+                break;
+            }
+
+            Debug.LogWarning(
+                "Paid invoice refresh attempt " + attemptNumber +
+                " finished with unchanged balance. Snapshot=" + balanceBeforeInvoice +
+                ", Current=" + _state.SoftCurrency);
+        }
+
+        if (balanceUpdated)
+            ShowPurchaseStatus("Payment confirmed. Balance updated.");
+        else
+            ShowPurchaseStatus("Payment confirmed, but balance sync is still pending. Try refresh in a moment.");
+
+        _invoiceRefreshCoroutine = null;
+        Debug.Log("=== PAID INVOICE REFRESH END ===");
+    }
+
+    private void ShowPurchaseStatus(string status)
+    {
+        if (view != null)
+            view.ShowStatus(status);
+
+        if (tournamentPanelView != null)
+            tournamentPanelView.ShowStatus(status);
+    }
+
     public void OnInvoiceClosed(string status)
     {
         _state.LastInvoiceStatus = status;
@@ -900,12 +955,20 @@ public class AppManager : MonoBehaviour
         Debug.Log("=== INVOICE CLOSED ===");
         Debug.Log("Invoice status: " + status);
 
-        if (view != null)
-            view.ShowStatus("Invoice closed: " + status + ". Refreshing profile...");
+        if (_invoiceRefreshCoroutine != null)
+        {
+            StopCoroutine(_invoiceRefreshCoroutine);
+            _invoiceRefreshCoroutine = null;
+        }
 
-        if (tournamentPanelView != null)
-            tournamentPanelView.ShowStatus("Invoice closed: " + status + ". Refreshing profile...");
+        if (string.Equals(status, "paid", StringComparison.OrdinalIgnoreCase))
+        {
+            ShowPurchaseStatus("Invoice paid. Waiting for backend balance sync...");
+            _invoiceRefreshCoroutine = StartCoroutine(RefreshGarageAfterPaidInvoiceFlow());
+            return;
+        }
 
+        ShowPurchaseStatus("Invoice closed: " + status + ". Refreshing profile...");
         StartCoroutine(RefreshFlow());
     }
 }
