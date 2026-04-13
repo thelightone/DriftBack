@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public sealed class PauseMenuController : MonoBehaviour
@@ -18,6 +17,7 @@ public sealed class PauseMenuController : MonoBehaviour
     [SerializeField] private Button continueButton;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button homeButton;
+    [SerializeField] private SceneTransitionLoader sceneTransitionLoader;
 
     public static bool IsPaused { get; private set; }
     public static bool IsPauseMenuVisible =>
@@ -88,14 +88,14 @@ public sealed class PauseMenuController : MonoBehaviour
     public void RestartRace()
     {
         SetPaused(false);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        SceneLoader.RestartRaceScene(sceneTransitionLoader);
     }
 
     public void GoHome()
     {
         SetPaused(false);
         string targetScene = string.IsNullOrWhiteSpace(homeSceneName) ? DefaultHomeSceneName : homeSceneName;
-        SceneManager.LoadScene(targetScene);
+        SceneLoader.LoadScene(targetScene, sceneTransitionLoader);
     }
 
     void SetPaused(bool paused)

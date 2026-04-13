@@ -377,7 +377,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3678960413204940236, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
       propertyPath: backendBaseUrl
-      value: https://098b-45-85-105-25.ngrok-free.app
+      value: https://cars-racing-production.up.railway.app
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

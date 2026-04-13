@@ -35,7 +35,7 @@ Material:
   - _FLIPBOOKBLENDING_OFF
   - _SOFTPARTICLES_ON
   m_LightmapFlags: 6
-  m_EnableInstancingVariants: 1
+  m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 3000
   stringTagMap:
