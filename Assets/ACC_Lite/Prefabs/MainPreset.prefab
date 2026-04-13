@@ -3052,7 +3052,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f51faf8bfdbb64245ada7d8b3ea9993a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneLoader
-  raceSceneName: Level1/Scenes/Level1
+  raceSceneName: Assets/Level1/Scenes/Level1.unity
   menuSceneName: Scenes/InitScene
 --- !u!114 &4120095853947447767
 MonoBehaviour:

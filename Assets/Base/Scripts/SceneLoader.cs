@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.SceneManagement;
@@ -73,7 +74,20 @@ public class SceneLoader : MonoBehaviour
         }
 
         Time.timeScale = 1f;
-        Debug.Log("Loading scene: " + sceneName + ", mode: " + RaceSessionContext.CurrentMode);
-        await Addressables.LoadSceneAsync(sceneName).Task;
+        string normalizedSceneName = sceneName.Replace("\\", "/").Trim();
+        Debug.Log(
+            $"Trying to load scene via Addressables '{normalizedSceneName}', mode: {RaceSessionContext.CurrentMode}");
+
+        try
+        {
+            await Addressables.LoadSceneAsync(normalizedSceneName).Task;
+            Debug.Log("Scene loaded via Addressables: " + normalizedSceneName);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError(
+                $"Addressables failed to load scene '{normalizedSceneName}'. " +
+                "Verify that the scene is marked Addressable and that address matches exactly.\n" + ex);
+        }
     }
 }
