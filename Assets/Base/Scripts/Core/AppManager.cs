@@ -145,11 +145,21 @@ public class AppManager : MonoBehaviour
                 _state.TournamentPoints,
                 _state.SoftCurrency,
                 _state.SelectedCarId,
-                error
+                error,
+                GetSelectedCarIcon()
             );
         }
 
         RefreshTournamentPanelStatus(error);
+    }
+
+    private Sprite GetSelectedCarIcon()
+    {
+        if (garageCatalog == null || string.IsNullOrWhiteSpace(_state.SelectedCarId))
+            return null;
+
+        var def = garageCatalog.GetById(_state.SelectedCarId);
+        return def != null ? def.icon : null;
     }
 
     private void RebuildPanels()
@@ -807,40 +817,42 @@ public class AppManager : MonoBehaviour
             yield break;
         }
 
-        var garageCar = FindGarageCar(car.carId);
-
-        if (garageCar == null)
-        {
-            if (view != null)
-                view.ShowStatus("Car is missing in garage response. Refresh profile first.");
-            yield break;
-        }
-
-        if (garageCar.owned)
+        if (HasCar(car.carId))
         {
             SelectCar(car.carId);
             yield break;
         }
 
-        if (garageCar.price == null)
+        var garageCar = FindGarageCar(car.carId);
+        int priceAmount;
+        string priceCurrency;
+
+        if (garageCar != null && garageCar.price != null)
         {
-            if (view != null)
-                view.ShowStatus("Car price is missing");
-            yield break;
+            priceAmount = garageCar.price.amount;
+            priceCurrency = string.IsNullOrWhiteSpace(garageCar.price.currency)
+                ? "RC"
+                : garageCar.price.currency;
+        }
+        else
+        {
+            priceAmount = car.softCurrencyPrice;
+            priceCurrency = "RC";
         }
 
-        if (garageCar.price.currency != "RC")
+        if (priceCurrency != "RC")
         {
             if (view != null)
                 view.ShowStatus("Backend still returns non-RC car pricing. Live backend is probably outdated.");
             yield break;
         }
 
-        if (_state.SoftCurrency < garageCar.price.amount)
+        if (_state.SoftCurrency < priceAmount)
         {
             if (view != null)
             {
                 view.ShowStatus($"Not enough race coins for {car.displayName}. Opening Buy Currency...");
+                RebuildPanels();
                 view.ShowBuyCurrencyPanel();
             }
             yield break;

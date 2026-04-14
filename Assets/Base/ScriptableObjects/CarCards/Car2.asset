@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Car2
   m_EditorClassIdentifier: Assembly-CSharp::CarDefinition
   carId: car2
-  displayName: Car2
-  softCurrencyPrice: 2
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  displayName: Kairon GT-XR
+  softCurrencyPrice: 100
+  icon: {fileID: 21300000, guid: c650ff71bd5399e4ba59cca33ddc6e4d, type: 3}

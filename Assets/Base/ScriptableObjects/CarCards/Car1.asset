@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Car1
   m_EditorClassIdentifier: Assembly-CSharp::CarDefinition
   carId: car1
-  displayName: Car1
-  softCurrencyPrice: 1
-  icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+  displayName: Nythera Pulse R
+  softCurrencyPrice: 100
+  icon: {fileID: 21300000, guid: d0141cb53ef37c74f99b00a5126cd1f4, type: 3}

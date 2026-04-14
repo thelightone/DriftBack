@@ -28,7 +28,7 @@ public class TournamentPanelView : MonoBehaviour
     )
     {
         if (tournamentBalanceText != null)
-            tournamentBalanceText.text = "Coins: " + softCurrency;
+            tournamentBalanceText.text = softCurrency + " RC";
 
         if (descriptionText != null)
             descriptionText.text = "Pay coins to unlock tournament access and compete for the best result";

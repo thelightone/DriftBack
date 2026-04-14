@@ -20,6 +20,7 @@ public class MainScreenView : MonoBehaviour
     public TMP_Text tournamentPointsText;
     public TMP_Text softCurrencyText;
     public TMP_Text selectedCarText;
+    public Image selectedCarPreviewImage;
 
     [Header("Profile - Garage Panel")]
     public TMP_Text garageBalanceText;
@@ -72,7 +73,8 @@ public class MainScreenView : MonoBehaviour
         int tournamentPoints,
         int softCurrency,
         string selectedCarId,
-        string error
+        string error,
+        Sprite selectedCarIcon
     )
     {
         if (playerIdText != null)
@@ -85,22 +87,28 @@ public class MainScreenView : MonoBehaviour
             premiumText.text = "Premium: " + (isPremium ? "Yes" : "No");
 
         if (trainingPointsText != null)
-            trainingPointsText.text = "Training Record: " + trainingPoints;
+            trainingPointsText.text = trainingPoints.ToString();
 
         if (tournamentPointsText != null)
-            tournamentPointsText.text = "Tournament Record: " + tournamentPoints;
+            tournamentPointsText.text = tournamentPoints.ToString();
 
         if (softCurrencyText != null)
-            softCurrencyText.text = "Coins: " + softCurrency;
+            softCurrencyText.text = softCurrency + " RC";
 
         if (selectedCarText != null)
             selectedCarText.text = "Selected: " + Safe(selectedCarId);
 
+        if (selectedCarPreviewImage != null)
+        {
+            selectedCarPreviewImage.sprite = selectedCarIcon;
+            selectedCarPreviewImage.enabled = selectedCarIcon != null;
+        }
+
         if (garageBalanceText != null)
-            garageBalanceText.text = "Coins: " + softCurrency;
+            garageBalanceText.text = softCurrency + " RC";
 
         if (buyCurrencyBalanceText != null)
-            buyCurrencyBalanceText.text = "Coins: " + softCurrency;
+            buyCurrencyBalanceText.text = softCurrency + " RC";
 
         if (!string.IsNullOrEmpty(error))
             ShowStatus(error);

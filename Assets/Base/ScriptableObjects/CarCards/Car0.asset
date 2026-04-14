@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Car0
   m_EditorClassIdentifier: Assembly-CSharp::CarDefinition
   carId: car0
-  displayName: Car0
-  starsPrice: 1
-  icon: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  displayName: Ravion S13 Drift
+  softCurrencyPrice: 100
+  icon: {fileID: 21300000, guid: c2948399638b84941a80d72089d4d515, type: 3}

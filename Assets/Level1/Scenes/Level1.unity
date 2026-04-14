@@ -380,13 +380,22 @@ PrefabInstance:
       value: https://cars-racing-production.up.railway.app
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 1820203176358158486, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 1222233238741610528, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1960561271}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 8762962410545653061, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
       insertIndex: -1
       addedObject: {fileID: 412261483}
   m_SourcePrefab: {fileID: 100100000, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
+--- !u!4 &1011916970 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1222233238741610528, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
+  m_PrefabInstance: {fileID: 1011916969}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &1367405092
 Mesh:
   m_ObjectHideFlags: 0
@@ -565,6 +574,136 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1001 &1960561270
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1011916970}
+    m_Modifications:
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.0284046
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.31
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.9951353
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.0036651792
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9999933
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 128.58
+      objectReference: {fileID: 0}
+    - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4121176803559752608, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7701137945840840088, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_Name
+      value: Car
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7701137945840840088, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1960561279}
+  m_SourcePrefab: {fileID: 100100000, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+--- !u!4 &1960561271 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+  m_PrefabInstance: {fileID: 1960561270}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1960561272 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5201975433731835034, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+  m_PrefabInstance: {fileID: 1960561270}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1960561273 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3636047217559059344, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+  m_PrefabInstance: {fileID: 1960561270}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1960561274 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2678270472935392562, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+  m_PrefabInstance: {fileID: 1960561270}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1960561275 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7001527572655695780, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+  m_PrefabInstance: {fileID: 1960561270}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1960561276 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 962582659460658699, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+  m_PrefabInstance: {fileID: 1960561270}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1960561277 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4121176803559752608, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+  m_PrefabInstance: {fileID: 1960561270}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1960561278 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7701137945840840088, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+  m_PrefabInstance: {fileID: 1960561270}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1960561279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1960561278}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94a967ccd4c0bfe4faea1935fbf3dffc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCarSkinSelector
+  fallbackCarId: car0
+  skins:
+  - carId: car0
+    skinObject: {fileID: 1960561277}
+  - carId: car1
+    skinObject: {fileID: 1960561276}
+  - carId: car2
+    skinObject: {fileID: 1960561275}
+  - carId: car3
+    skinObject: {fileID: 1960561274}
+  - carId: car4
+    skinObject: {fileID: 1960561273}
+  - carId: car5
+    skinObject: {fileID: 1960561272}
 --- !u!1001 &5225381779702364062
 PrefabInstance:
   m_ObjectHideFlags: 0

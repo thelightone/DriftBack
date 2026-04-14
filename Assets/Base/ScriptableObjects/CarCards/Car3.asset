@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53613d7ebf309e84f8605a7a0da978ff, type: 3}
+  m_Name: Car3
+  m_EditorClassIdentifier: Assembly-CSharp::CarDefinition
+  carId: car3
+  displayName: Dravik RS-9
+  softCurrencyPrice: 100
+  icon: {fileID: 21300000, guid: 14e9ad4cd7ccb5149a03f07bfd2013ac, type: 3}
