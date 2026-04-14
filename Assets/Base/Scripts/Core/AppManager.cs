@@ -983,4 +983,5 @@ public class AppManager : MonoBehaviour
         ShowPurchaseStatus("Invoice closed: " + status + ". Refreshing profile...");
         StartCoroutine(RefreshFlow());
     }
+
 }
