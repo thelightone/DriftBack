@@ -40,8 +40,8 @@ public class GameController :MonoBehaviour
 
 		Instance = this;
 
-		//Find all cars in current game.
-		Cars.AddRange (GameObject.FindObjectsOfType<CarController> ());
+		//Find all cars in current game (inactive skin variants must be included).
+		Cars.AddRange (FindObjectsByType<CarController> (FindObjectsInactive.Include, FindObjectsSortMode.None));
 		Cars = Cars.OrderBy (c => c.name).ToList();
 
 		foreach (var car in Cars)
@@ -90,6 +90,30 @@ public class GameController :MonoBehaviour
 		CurrentCarIndex = MathExtentions.LoopClamp (CurrentCarIndex + 1, 0, Cars.Count);
 
 		m_PlayerCar = Cars[CurrentCarIndex];
+		m_PlayerCar.GetComponent<UserControl> ().enabled = true;
+		m_PlayerCar.GetComponent<AudioListener> ().enabled = true;
+	}
+
+	/// <summary>
+	/// Переключает управление и ссылку PlayerCar на машину выбранного скина (несколько CarController в сцене).
+	/// </summary>
+	public void SwitchToPlayerCar (CarController newPlayerCar)
+	{
+		if (newPlayerCar == null || newPlayerCar == m_PlayerCar)
+			return;
+
+		if (!Cars.Contains (newPlayerCar))
+		{
+			Cars.Add (newPlayerCar);
+			Cars = Cars.OrderBy (c => c.name).ToList ();
+		}
+
+		m_PlayerCar.GetComponent<UserControl> ().enabled = false;
+		m_PlayerCar.GetComponent<AudioListener> ().enabled = false;
+
+		m_PlayerCar = newPlayerCar;
+		CurrentCarIndex = Mathf.Max (0, Cars.IndexOf (m_PlayerCar));
+
 		m_PlayerCar.GetComponent<UserControl> ().enabled = true;
 		m_PlayerCar.GetComponent<AudioListener> ().enabled = true;
 	}

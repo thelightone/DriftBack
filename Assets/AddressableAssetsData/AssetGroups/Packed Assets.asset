@@ -30,6 +30,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a8b3260c86a39ce4f9147dec8cc548ea
+    m_Address: Assets/Cars
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 6daeb2a40cc929d4ea60c0a4d0eae50b, type: 2}
   m_SchemaSet:

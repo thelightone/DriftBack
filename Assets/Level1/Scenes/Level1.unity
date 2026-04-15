@@ -327,6 +327,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 21314686924241823, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
+      propertyPath: carSelector
+      value: 
+      objectReference: {fileID: 1960561279}
     - target: {fileID: 450133838696189288, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
       propertyPath: m_Name
       value: MainPreset
@@ -582,6 +586,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1011916970}
     m_Modifications:
+    - target: {fileID: 962582659460658699, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3369906600000273099, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1.0284046
@@ -624,7 +632,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4121176803559752608, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7701137945840840088, guid: 18d652dbc4d4fef4f8e3cf47eab74b07, type: 3}
       propertyPath: m_Name

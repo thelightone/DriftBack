@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class RaceResultSubmitter : MonoBehaviour
@@ -21,13 +22,48 @@ public class RaceResultSubmitter : MonoBehaviour
 
         _submitted = true;
 
-        if (RaceSessionContext.IsTournament)
+        if (RaceSessionContext.IsTournament && RaceSessionContext.BackendRacePrepared &&
+            !string.IsNullOrWhiteSpace(RaceSessionContext.AccessToken) &&
+            !string.IsNullOrWhiteSpace(RaceSessionContext.SeasonId) &&
+            !string.IsNullOrWhiteSpace(RaceSessionContext.RaceId) &&
+            !string.IsNullOrWhiteSpace(RaceSessionContext.Seed))
         {
-            Debug.Log($"Tournament finished. Result submit is temporarily disabled. Score={score}, Time={timeSeconds}");
+            int safeScore = Mathf.Max(0, score);
+            StartCoroutine(SubmitTournamentFinish(safeScore));
+            return;
         }
-        else
+
+        Debug.Log(
+            $"Race finished (no backend submit). Mode tournament={RaceSessionContext.IsTournament}, prepared={RaceSessionContext.BackendRacePrepared}. Score={score}, Time={timeSeconds}");
+    }
+
+    private IEnumerator SubmitTournamentFinish(int score)
+    {
+        var api = new BackendApi(RaceSessionContext.BackendBaseUrl);
+        var body = new SeasonRaceFinishRequest
         {
-            Debug.Log($"Training finished. Result submit is temporarily disabled. Score={score}, Time={timeSeconds}");
+            raceId = RaceSessionContext.RaceId,
+            seed = RaceSessionContext.Seed,
+            score = score
+        };
+
+        SeasonRaceFinishResponse response = null;
+        string err = null;
+        yield return api.FinishSeasonRace(
+            RaceSessionContext.AccessToken,
+            RaceSessionContext.SeasonId,
+            body,
+            r => response = r,
+            e => err = e);
+
+        if (!string.IsNullOrEmpty(err))
+        {
+            Debug.LogError("FinishSeasonRace failed: " + err);
+            yield break;
         }
+
+        if (response != null)
+            Debug.Log(
+                $"FinishSeasonRace ok. score={response.score}, bestScore={response.bestScore}, isNewBest={response.isNewBest}");
     }
 }

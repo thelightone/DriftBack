@@ -8,6 +8,7 @@ public class AppManager : MonoBehaviour
     [Header("Default Config")]
     [SerializeField] private string defaultCarId = "car1";
     [SerializeField] private int tournamentEntryPrice = 100;
+    [SerializeField] private string tournamentSeasonId = "";
     [SerializeField] private bool useLocalDebugPurchases = true;
 
     [Header("Links")]
@@ -30,6 +31,7 @@ public class AppManager : MonoBehaviour
     private GarageResponse _lastGarageResponse;
     private Coroutine _invoiceRefreshCoroutine;
     private int _invoiceBalanceSnapshot;
+    private string _tournamentHighScoreDisplay = "—";
 
     private void Awake()
     {
@@ -149,8 +151,6 @@ public class AppManager : MonoBehaviour
                 GetSelectedCarIcon()
             );
         }
-
-        RefreshTournamentPanelStatus(error);
     }
 
     private Sprite GetSelectedCarIcon()
@@ -209,31 +209,9 @@ public class AppManager : MonoBehaviour
             _state.SoftCurrency,
             tournamentEntryPrice,
             _state.SelectedCarId,
-            _state.IsPremium
+            _state.IsPremium,
+            _tournamentHighScoreDisplay
         );
-    }
-
-    private void RefreshTournamentPanelStatus(string error = "")
-    {
-        if (tournamentPanelView == null)
-            return;
-
-        if (!string.IsNullOrWhiteSpace(error))
-        {
-            tournamentPanelView.ShowStatus(error);
-            return;
-        }
-
-        if (_state.IsPremium)
-        {
-            tournamentPanelView.ShowStatus("Tournament access unlocked");
-            return;
-        }
-
-        if (_state.SoftCurrency < tournamentEntryPrice)
-            tournamentPanelView.ShowStatus("Not enough currency for tournament");
-        else
-            tournamentPanelView.ShowStatus("Ready to unlock tournament");
     }
 
     private void EnsureSelectedCarValid()
@@ -355,11 +333,10 @@ public class AppManager : MonoBehaviour
         Debug.Log("OnOpenTournamentClicked called");
 
         RebuildPanels();
+        StartCoroutine(RefreshTournamentHighScoreCoroutine());
 
         if (view != null)
             view.ShowTournamentPanel();
-
-        RefreshTournamentPanelStatus();
     }
 
     public void OnCloseTournamentClicked()
@@ -370,18 +347,9 @@ public class AppManager : MonoBehaviour
 
     public void OnBuyTournamentAccessClicked()
     {
-        if (_state.IsPremium)
-        {
-            if (tournamentPanelView != null)
-                tournamentPanelView.ShowStatus("Tournament access already unlocked");
-            return;
-        }
 
         if (_state.SoftCurrency < tournamentEntryPrice)
         {
-            if (tournamentPanelView != null)
-                tournamentPanelView.ShowStatus("Not enough currency for tournament. Opening Buy Currency...");
-
             if (view != null)
                 view.ShowBuyCurrencyPanel();
 
@@ -394,9 +362,6 @@ public class AppManager : MonoBehaviour
         SaveProfileCache();
         RebuildPanels();
         RefreshAllViews();
-
-        if (tournamentPanelView != null)
-            tournamentPanelView.ShowStatus("Tournament unlocked locally (temporary)");
 
         if (view != null)
             view.ShowStatus("Tournament unlocked locally (temporary)");
@@ -434,33 +399,180 @@ public class AppManager : MonoBehaviour
     {
         if (sceneLoader == null)
         {
-            if (tournamentPanelView != null)
-                tournamentPanelView.ShowStatus("SceneLoader is not assigned");
+            NotifyTournamentFlow("SceneLoader is not assigned");
             return;
         }
 
-        if (!_state.IsPremium)
+        if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
         {
-            if (tournamentPanelView != null)
-                tournamentPanelView.ShowStatus("Tournament access is not unlocked");
+            NotifyTournamentFlow("Authorize first (init)");
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(_state.PlayerId))
+        NotifyTournamentFlow("");
+        StartCoroutine(StartTournamentRaceFlow());
+    }
+
+    private string ConfiguredTournamentSeasonId()
+    {
+        if (tournamentSeasonId == null)
+            return "";
+        string s = tournamentSeasonId.Trim();
+        if (s == "0")
+            return "";
+        return s;
+    }
+
+    private void NotifyTournamentFlow(string message)
+    {
+        Debug.LogWarning("Tournament: " + message);
+        if (tournamentPanelView != null)
+            tournamentPanelView.SetTournamentFlowMessage(message);
+        if (view != null)
+            view.ShowStatus(message);
+    }
+
+    private IEnumerator ResolveActiveSeasonIdForTournament(Action<string> onResolved, Action<string> onError)
+    {
+        string seasonId = ConfiguredTournamentSeasonId();
+
+        if (!string.IsNullOrEmpty(seasonId))
         {
-            if (tournamentPanelView != null)
-                tournamentPanelView.ShowStatus("PlayerId is missing. Run init first.");
-            return;
+            onResolved?.Invoke(seasonId);
+            yield break;
         }
 
-        Debug.Log("Starting tournament race. PlayerId=" + _state.PlayerId);
+        SeasonsListResponse listResponse = null;
+        string seasonsErr = null;
+        yield return _backendApi.GetSeasons(
+            _state.AccessToken,
+            r => listResponse = r,
+            e => seasonsErr = e);
 
-        RaceSessionContext.StartTournament(
+        if (!string.IsNullOrEmpty(seasonsErr) || listResponse == null)
+        {
+            onError?.Invoke(seasonsErr ?? "failed");
+            yield break;
+        }
+
+        if (listResponse.seasons == null || listResponse.seasons.Length == 0)
+        {
+            onError?.Invoke("no seasons");
+            yield break;
+        }
+
+        for (int i = 0; i < listResponse.seasons.Length; i++)
+        {
+            var s = listResponse.seasons[i];
+            if (s != null && s.status == "active" && !string.IsNullOrWhiteSpace(s.seasonId))
+            {
+                onResolved?.Invoke(s.seasonId);
+                yield break;
+            }
+        }
+
+        onError?.Invoke("no active season");
+    }
+
+    private IEnumerator RefreshTournamentHighScoreCoroutine()
+    {
+        if (tournamentPanelView == null)
+            yield break;
+
+        if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
+        {
+            _tournamentHighScoreDisplay = "—";
+            RebuildTournamentPanel();
+            yield break;
+        }
+
+        _tournamentHighScoreDisplay = "…";
+        RebuildTournamentPanel();
+
+        string seasonId = null;
+        string resolveErr = null;
+        yield return ResolveActiveSeasonIdForTournament(
+            id => seasonId = id,
+            e => resolveErr = e);
+
+        if (!string.IsNullOrEmpty(resolveErr) || string.IsNullOrEmpty(seasonId))
+        {
+            _tournamentHighScoreDisplay = "—";
+            RebuildTournamentPanel();
+            yield break;
+        }
+
+        string detailBody = null;
+        string detailErr = null;
+        yield return _backendApi.GetSeasonDetail(
+            _state.AccessToken,
+            seasonId,
+            t => detailBody = t,
+            e => detailErr = e);
+
+        if (!string.IsNullOrEmpty(detailErr) || string.IsNullOrEmpty(detailBody))
+        {
+            _tournamentHighScoreDisplay = "—";
+            RebuildTournamentPanel();
+            yield break;
+        }
+
+        _tournamentHighScoreDisplay = SeasonDetailBestScoreParser.FormatHighScoreDisplay(detailBody);
+        RebuildTournamentPanel();
+    }
+
+    private IEnumerator StartTournamentRaceFlow()
+    {
+        Debug.Log("Starting tournament race flow. PlayerId=" + _state.PlayerId);
+
+        string seasonId = null;
+        string resolveErr = null;
+        yield return ResolveActiveSeasonIdForTournament(
+            id => seasonId = id,
+            e => resolveErr = e);
+
+        if (!string.IsNullOrEmpty(resolveErr) || string.IsNullOrEmpty(seasonId))
+        {
+            NotifyTournamentFlow("Seasons: " + (resolveErr ?? "failed"));
+            yield break;
+        }
+
+        string enterErr = null;
+        yield return _backendApi.EnterSeason(
+            _state.AccessToken,
+            seasonId,
+            () => { },
+            e => enterErr = e);
+
+        if (!string.IsNullOrEmpty(enterErr))
+        {
+            NotifyTournamentFlow("Season enter: " + enterErr);
+            yield break;
+        }
+
+        SeasonRaceStartResponse startResponse = null;
+        string startErr = null;
+        yield return _backendApi.StartSeasonRace(
+            _state.AccessToken,
+            seasonId,
+            r => startResponse = r,
+            e => startErr = e);
+
+        if (!string.IsNullOrEmpty(startErr) || startResponse == null)
+        {
+            NotifyTournamentFlow("Race start: " + (startErr ?? "failed"));
+            yield break;
+        }
+
+        RaceSessionContext.BeginTournamentRace(
+            _state.AccessToken,
+            seasonId,
+            startResponse.raceId,
+            startResponse.seed,
             _state.PlayerId,
             _state.InitData,
             _state.TelegramUser != null ? _state.TelegramUser.id : 0,
-            backendBaseUrl
-        );
+            backendBaseUrl);
 
         sceneLoader.StartTournamentGame();
     }
@@ -476,8 +588,6 @@ public class AppManager : MonoBehaviour
         if (view != null)
             view.ShowStatus("+100 coins added (debug)");
 
-        if (tournamentPanelView != null)
-            tournamentPanelView.ShowStatus("+100 coins added (debug)");
     }
 
     public bool HasCar(string carId)
@@ -527,8 +637,6 @@ public class AppManager : MonoBehaviour
         if (view != null)
             view.ShowStatus("Selected car: " + carId);
 
-        if (tournamentPanelView != null)
-            tournamentPanelView.ShowStatus("Selected car: " + carId);
     }
 
     private void OnGarageCarAction(CarDefinition car)
@@ -955,9 +1063,6 @@ public class AppManager : MonoBehaviour
     {
         if (view != null)
             view.ShowStatus(status);
-
-        if (tournamentPanelView != null)
-            tournamentPanelView.ShowStatus(status);
     }
 
     public void OnInvoiceClosed(string status)

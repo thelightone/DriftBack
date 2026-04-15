@@ -7,7 +7,6 @@ public class CurrencyPackItemView : MonoBehaviour
     [Header("UI")]
     public Image iconImage;
     public TMP_Text titleText;
-    public TMP_Text amountText;
     public TMP_Text starsPriceText;
     public Button buyButton;
 
@@ -36,11 +35,8 @@ public class CurrencyPackItemView : MonoBehaviour
         if (titleText != null)
             titleText.text = pack.displayName;
 
-        if (amountText != null)
-            amountText.text = $"{pack.softCurrencyAmount} Coins";
-
         if (starsPriceText != null)
-            starsPriceText.text = $"{pack.starsPrice} Stars";
+            starsPriceText.text = pack.starsPrice.ToString();
 
         if (buyButton != null)
         {

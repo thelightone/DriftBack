@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Text;
 using UnityEngine;
@@ -251,5 +252,228 @@ public class BackendApi
 
         Debug.Log("=== HEALTH CHECK END ===");
         onSuccess?.Invoke(request.downloadHandler.text);
+    }
+
+    public IEnumerator GetSeasons(
+        string accessToken,
+        Action<SeasonsListResponse> onSuccess,
+        Action<string> onError)
+    {
+        string url = _baseUrl + "/v1/seasons";
+
+        Debug.Log("=== GET SEASONS START ===");
+        Debug.Log("GET " + url);
+
+        using var request = UnityWebRequest.Get(url);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        Debug.Log("GetSeasons response code: " + request.responseCode);
+        Debug.Log("GetSeasons response text: " + request.downloadHandler.text);
+
+        if (request.responseCode != 200)
+        {
+            onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
+            yield break;
+        }
+
+        SeasonsListResponse response = null;
+
+        try
+        {
+            response = JsonUtility.FromJson<SeasonsListResponse>(request.downloadHandler.text);
+        }
+        catch (Exception e)
+        {
+            onError?.Invoke("GetSeasons parse error: " + e.Message);
+            yield break;
+        }
+
+        if (response == null)
+        {
+            onError?.Invoke("GetSeasons response is null");
+            yield break;
+        }
+
+        Debug.Log("=== GET SEASONS END ===");
+        onSuccess?.Invoke(response);
+    }
+
+    public IEnumerator GetSeasonDetail(
+        string accessToken,
+        string seasonId,
+        Action<string> onSuccess,
+        Action<string> onError)
+    {
+        string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId);
+
+        Debug.Log("=== GET SEASON DETAIL START ===");
+        Debug.Log("GET " + url);
+
+        using var request = UnityWebRequest.Get(url);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        Debug.Log("GetSeasonDetail response code: " + request.responseCode);
+        Debug.Log("GetSeasonDetail response text: " + request.downloadHandler.text);
+
+        if (request.responseCode != 200)
+        {
+            onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
+            yield break;
+        }
+
+        string body = request.downloadHandler.text;
+        if (string.IsNullOrEmpty(body))
+        {
+            onError?.Invoke("GetSeasonDetail empty body");
+            yield break;
+        }
+
+        Debug.Log("=== GET SEASON DETAIL END ===");
+        onSuccess?.Invoke(body);
+    }
+
+    public IEnumerator EnterSeason(
+        string accessToken,
+        string seasonId,
+        Action onSuccess,
+        Action<string> onError)
+    {
+        string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId) + "/enter";
+        byte[] body = Encoding.UTF8.GetBytes("{}");
+
+        Debug.Log("=== ENTER SEASON START ===");
+        Debug.Log("POST " + url);
+
+        using var request = new UnityWebRequest(url, "POST");
+        request.uploadHandler = new UploadHandlerRaw(body);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        Debug.Log("EnterSeason response code: " + request.responseCode);
+        Debug.Log("EnterSeason response text: " + request.downloadHandler.text);
+
+        long code = request.responseCode;
+        if (code == 200 || code == 409)
+        {
+            Debug.Log("=== ENTER SEASON END ===");
+            onSuccess?.Invoke();
+            yield break;
+        }
+
+        onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
+    }
+
+    public IEnumerator StartSeasonRace(
+        string accessToken,
+        string seasonId,
+        Action<SeasonRaceStartResponse> onSuccess,
+        Action<string> onError)
+    {
+        string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId) + "/races/start";
+        byte[] body = Encoding.UTF8.GetBytes("{}");
+
+        Debug.Log("=== SEASON RACE START ===");
+        Debug.Log("POST " + url);
+
+        using var request = new UnityWebRequest(url, "POST");
+        request.uploadHandler = new UploadHandlerRaw(body);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        Debug.Log("StartSeasonRace response code: " + request.responseCode);
+        Debug.Log("StartSeasonRace response text: " + request.downloadHandler.text);
+
+        if (request.responseCode != 200)
+        {
+            onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
+            yield break;
+        }
+
+        SeasonRaceStartResponse response = null;
+
+        try
+        {
+            response = JsonUtility.FromJson<SeasonRaceStartResponse>(request.downloadHandler.text);
+        }
+        catch (Exception e)
+        {
+            onError?.Invoke("StartSeasonRace parse error: " + e.Message);
+            yield break;
+        }
+
+        if (response == null || string.IsNullOrWhiteSpace(response.raceId) ||
+            string.IsNullOrWhiteSpace(response.seed))
+        {
+            onError?.Invoke("StartSeasonRace: invalid response");
+            yield break;
+        }
+
+        Debug.Log("=== SEASON RACE START END ===");
+        onSuccess?.Invoke(response);
+    }
+
+    public IEnumerator FinishSeasonRace(
+        string accessToken,
+        string seasonId,
+        SeasonRaceFinishRequest requestData,
+        Action<SeasonRaceFinishResponse> onSuccess,
+        Action<string> onError)
+    {
+        string json = JsonUtility.ToJson(requestData);
+        string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId) + "/races/finish";
+
+        Debug.Log("=== SEASON RACE FINISH START ===");
+        Debug.Log("POST " + url);
+        Debug.Log("FinishSeasonRace request json: " + json);
+
+        using var request = new UnityWebRequest(url, "POST");
+        request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        Debug.Log("FinishSeasonRace response code: " + request.responseCode);
+        Debug.Log("FinishSeasonRace response text: " + request.downloadHandler.text);
+
+        if (request.responseCode != 200)
+        {
+            onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
+            yield break;
+        }
+
+        SeasonRaceFinishResponse response = null;
+
+        try
+        {
+            response = JsonUtility.FromJson<SeasonRaceFinishResponse>(request.downloadHandler.text);
+        }
+        catch (Exception e)
+        {
+            onError?.Invoke("FinishSeasonRace parse error: " + e.Message);
+            yield break;
+        }
+
+        if (response == null)
+        {
+            onError?.Invoke("FinishSeasonRace response is null");
+            yield break;
+        }
+
+        Debug.Log("=== SEASON RACE FINISH END ===");
+        onSuccess?.Invoke(response);
     }
 }

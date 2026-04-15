@@ -1,8 +1,12 @@
+using System;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using UnityEditor.SceneManagement;
+#endif
 
 public class SceneLoader : MonoBehaviour
 {
@@ -48,25 +52,18 @@ public class SceneLoader : MonoBehaviour
 
         if (mode == RaceMode.Tournament)
         {
-            RaceSessionContext.StartTournament(
-                playerId,
-                initData,
-                telegramUserId,
-                backendBaseUrl
-            );
+            if (RaceSessionContext.BackendRacePrepared)
+                RaceSessionContext.MergeBridgeSnapshot(playerId, initData, telegramUserId, backendBaseUrl);
+            else
+                RaceSessionContext.StartTournament(playerId, initData, telegramUserId, backendBaseUrl);
         }
         else
         {
-            RaceSessionContext.StartTraining(
-                playerId,
-                initData,
-                telegramUserId,
-                backendBaseUrl
-            );
+            RaceSessionContext.StartTraining(playerId, initData, telegramUserId, backendBaseUrl);
         }
 
         Debug.Log(
-            $"Race context prepared. Mode={RaceSessionContext.CurrentMode}, PlayerId={playerId}, TelegramUserId={telegramUserId}");
+            $"Race context prepared. Mode={RaceSessionContext.CurrentMode}, PlayerId={playerId}, TelegramUserId={telegramUserId}, BackendRacePrepared={RaceSessionContext.BackendRacePrepared}");
     }
 
     public static void RestartRaceScene(SceneTransitionLoader transitionLoader = null)
@@ -173,11 +170,95 @@ public class SceneLoader : MonoBehaviour
                 return;
             }
 
+            Addressables.Release(completedHandle);
+
+            if (TryLoadRaceSceneAfterAddressablesFail(normalizedSceneName))
+                return;
+
             Debug.LogError(
                 $"Addressables failed to load scene '{normalizedSceneName}'. " +
                 "Verify that the scene is marked Addressable, that address matches exactly, and that remote bundles are rebuilt.\n" +
                 completedHandle.OperationException);
         };
+    }
+
+    /// <summary>
+    /// When Addressables cannot load the race scene (common in Editor if catalog or bundles are out of date),
+    /// try Editor direct open, then scenes registered in Build Settings.
+    /// </summary>
+    public static bool TryLoadRaceSceneAfterAddressablesFail(string normalizedSceneReference)
+    {
+        if (string.IsNullOrWhiteSpace(normalizedSceneReference))
+            return false;
+
+        normalizedSceneReference = NormalizeSceneReference(normalizedSceneReference);
+
+#if UNITY_EDITOR
+        if (normalizedSceneReference.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) &&
+            normalizedSceneReference.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                EditorSceneManager.OpenScene(normalizedSceneReference, OpenSceneMode.Single);
+                Debug.LogWarning(
+                    $"Addressables failed; opened scene in Editor via path: {normalizedSceneReference}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Editor OpenScene fallback failed: {ex.Message}");
+            }
+        }
+#endif
+
+        if (normalizedSceneReference.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+        {
+            int buildIndex = SceneUtility.GetBuildIndexByScenePath(normalizedSceneReference);
+            if (buildIndex >= 0)
+            {
+                Debug.LogWarning(
+                    $"Addressables failed; loading scene from Build Settings by path (index {buildIndex}).");
+                SceneManager.LoadScene(buildIndex, LoadSceneMode.Single);
+                return true;
+            }
+        }
+
+        string shortName = GetSceneAssetNameWithoutExtension(normalizedSceneReference);
+        if (!string.IsNullOrEmpty(shortName) && IsSceneInBuildSettings(shortName))
+        {
+            Debug.LogWarning($"Addressables failed; loading scene from Build Settings by name: {shortName}");
+            SceneManager.LoadScene(shortName, LoadSceneMode.Single);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string GetSceneAssetNameWithoutExtension(string normalizedReference)
+    {
+        string s = normalizedReference.Trim();
+        if (s.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+            s = s.Substring(0, s.Length - ".unity".Length);
+
+        int i = s.LastIndexOf('/');
+        return i >= 0 ? s.Substring(i + 1) : s;
+    }
+
+    private static bool IsSceneInBuildSettings(string sceneNameWithoutPath)
+    {
+        if (string.IsNullOrEmpty(sceneNameWithoutPath))
+            return false;
+
+        int count = SceneManager.sceneCountInBuildSettings;
+        for (int i = 0; i < count; i++)
+        {
+            string path = SceneUtility.GetScenePathByBuildIndex(i);
+            string name = GetSceneAssetNameWithoutExtension(path);
+            if (string.Equals(name, sceneNameWithoutPath, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     private static string NormalizeSceneReference(string sceneReference)

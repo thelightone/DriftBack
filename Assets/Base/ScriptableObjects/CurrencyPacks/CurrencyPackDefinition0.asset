@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec58a90cb5a593a4ca13fdcd771f1c66, type: 3}
   m_Name: CurrencyPackDefinition0
   m_EditorClassIdentifier: Assembly-CSharp::CurrencyPackDefinition
-  productId: rc_bundle_10
-  displayName: Currency100
+  productId: rc_bundle_100
+  displayName: 100 RC
   softCurrencyAmount: 100
   starsPrice: 1
-  icon: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: 21300000, guid: 691adfae67a8b6e40b23f03df67db3b5, type: 3}

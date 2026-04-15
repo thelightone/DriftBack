@@ -7,6 +7,8 @@ using UnityEngine.SceneManagement;
 
 public sealed class SceneTransitionLoader : MonoBehaviour
 {
+    private const float AsyncSceneLoadProgressMax = 0.9f;
+
     [Header("Loading Screen")]
     [SerializeField] private GameObject loadingScreenPrefab;
     [SerializeField] private Transform loadingScreenParent;
@@ -43,7 +45,7 @@ public sealed class SceneTransitionLoader : MonoBehaviour
         _isTransitionInProgress = true;
         Time.timeScale = 1f;
 
-        InstantiateLoadingScreen();
+        GameObject loadingScreenInstance = InstantiateLoadingScreen();
         yield return null;
 
         AsyncOperation loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
@@ -57,12 +59,14 @@ public sealed class SceneTransitionLoader : MonoBehaviour
         loadOperation.allowSceneActivation = false;
 
         float elapsed = 0f;
-        while (loadOperation.progress < 0.9f || elapsed < minimumLoadingScreenTime)
+        while (loadOperation.progress < AsyncSceneLoadProgressMax || elapsed < minimumLoadingScreenTime)
         {
+            ApplyLoadingProgress(loadingScreenInstance, SceneLoadProgressNormalized(loadOperation));
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 
+        ApplyLoadingProgress(loadingScreenInstance, 1f);
         loadOperation.allowSceneActivation = true;
     }
 
@@ -80,16 +84,26 @@ public sealed class SceneTransitionLoader : MonoBehaviour
         float elapsed = 0f;
         while (!loadHandle.IsDone || elapsed < minimumLoadingScreenTime)
         {
+            float p = loadHandle.PercentComplete;
+            ApplyLoadingProgress(loadingScreenInstance, p);
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 
         if (loadHandle.Status != AsyncOperationStatus.Succeeded)
         {
-            _isTransitionInProgress = false;
+            Addressables.Release(loadHandle);
 
             if (loadingScreenInstance != null)
                 Destroy(loadingScreenInstance);
+
+            if (SceneLoader.TryLoadRaceSceneAfterAddressablesFail(sceneAddress))
+            {
+                _isTransitionInProgress = false;
+                yield break;
+            }
+
+            _isTransitionInProgress = false;
 
             Debug.LogError(
                 $"Addressables failed to load scene '{sceneAddress}'. " +
@@ -98,6 +112,7 @@ public sealed class SceneTransitionLoader : MonoBehaviour
             yield break;
         }
 
+        ApplyLoadingProgress(loadingScreenInstance, 1f);
         AsyncOperation activateOperation = loadHandle.Result.ActivateAsync();
         while (!activateOperation.isDone)
             yield return null;
@@ -114,6 +129,25 @@ public sealed class SceneTransitionLoader : MonoBehaviour
 
         loadingScreenInstance.SetActive(true);
         return loadingScreenInstance;
+    }
+
+    private static void ApplyLoadingProgress(GameObject loadingScreenRoot, float progress01)
+    {
+        if (loadingScreenRoot == null)
+            return;
+
+        LoadingPanelView view = loadingScreenRoot.GetComponent<LoadingPanelView>();
+        if (view == null)
+            view = loadingScreenRoot.GetComponentInChildren<LoadingPanelView>(true);
+
+        view?.SetProgress01(progress01);
+    }
+
+    private static float SceneLoadProgressNormalized(AsyncOperation operation)
+    {
+        if (operation == null)
+            return 0f;
+        return Mathf.Clamp01(operation.progress / AsyncSceneLoadProgressMax);
     }
 
     private static string NormalizeSceneReference(string sceneReference)

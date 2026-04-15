@@ -15,4 +15,5 @@ MonoBehaviour:
   packs:
   - {fileID: 11400000, guid: 8349a5bd3844e674e944070406c7e46d, type: 2}
   - {fileID: 11400000, guid: 1e2224eda1a968b4c9141b347475b940, type: 2}
+  - {fileID: 11400000, guid: 7f41f4cf09065284483d8c4a89ce1242, type: 2}
   - {fileID: 11400000, guid: 65f4412ce75c2934c9bcb5b52f2476f9, type: 2}
