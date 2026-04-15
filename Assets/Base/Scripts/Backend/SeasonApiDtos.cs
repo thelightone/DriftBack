@@ -10,7 +10,39 @@ public class SeasonsListResponse
 public class SeasonSummaryDto
 {
     public string seasonId;
+    public string title;
+    public string mapId;
+    public int entryFee;
+    public string startsAt;
+    public string endsAt;
     public string status;
+    public bool entered;
+    public int bestScore;
+    public int totalRaces;
+}
+
+[Serializable]
+public class SeasonDetailDto
+{
+    public string seasonId;
+    public string title;
+    public string mapId;
+    public int entryFee;
+    public string startsAt;
+    public string endsAt;
+    public string status;
+    public bool entered;
+    public int bestScore;
+    public int totalRaces;
+}
+
+[Serializable]
+public class EnterSeasonResponse
+{
+    public bool success;
+    public string seasonId;
+    public string entryId;
+    public int raceCoinsBalance;
 }
 
 [Serializable]

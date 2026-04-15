@@ -32,6 +32,7 @@ public class AppManager : MonoBehaviour
     private Coroutine _invoiceRefreshCoroutine;
     private int _invoiceBalanceSnapshot;
     private string _tournamentHighScoreDisplay = "—";
+    private int _activeSeasonEntryFee = 0;
 
     private void Awake()
     {
@@ -200,6 +201,11 @@ public class AppManager : MonoBehaviour
         RebuildTournamentPanel();
     }
 
+    private int ActiveSeasonEntryFee()
+    {
+        return _activeSeasonEntryFee > 0 ? _activeSeasonEntryFee : tournamentEntryPrice;
+    }
+
     private void RebuildTournamentPanel()
     {
         if (tournamentPanelView == null)
@@ -207,7 +213,7 @@ public class AppManager : MonoBehaviour
 
         tournamentPanelView.ShowData(
             _state.SoftCurrency,
-            tournamentEntryPrice,
+            ActiveSeasonEntryFee(),
             _state.SelectedCarId,
             _state.IsPremium,
             _tournamentHighScoreDisplay
@@ -333,7 +339,7 @@ public class AppManager : MonoBehaviour
         Debug.Log("OnOpenTournamentClicked called");
 
         RebuildPanels();
-        StartCoroutine(RefreshTournamentHighScoreCoroutine());
+        StartCoroutine(RefreshTournamentDataCoroutine());
 
         if (view != null)
             view.ShowTournamentPanel();
@@ -347,8 +353,13 @@ public class AppManager : MonoBehaviour
 
     public void OnBuyTournamentAccessClicked()
     {
+        if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
+        {
+            NotifyTournamentFlow("Authorize first (init)");
+            return;
+        }
 
-        if (_state.SoftCurrency < tournamentEntryPrice)
+        if (_state.SoftCurrency < ActiveSeasonEntryFee())
         {
             if (view != null)
                 view.ShowBuyCurrencyPanel();
@@ -356,15 +367,8 @@ public class AppManager : MonoBehaviour
             return;
         }
 
-        _state.SoftCurrency -= tournamentEntryPrice;
-        _state.IsPremium = true;
-
-        SaveProfileCache();
-        RebuildPanels();
-        RefreshAllViews();
-
-        if (view != null)
-            view.ShowStatus("Tournament unlocked locally (temporary)");
+        NotifyTournamentFlow("");
+        StartCoroutine(EnterSeasonFlow());
     }
 
     public void OnStartTrainingClicked()
@@ -474,7 +478,7 @@ public class AppManager : MonoBehaviour
         onError?.Invoke("no active season");
     }
 
-    private IEnumerator RefreshTournamentHighScoreCoroutine()
+    private IEnumerator RefreshTournamentDataCoroutine()
     {
         if (tournamentPanelView == null)
             yield break;
@@ -482,6 +486,7 @@ public class AppManager : MonoBehaviour
         if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
         {
             _tournamentHighScoreDisplay = "—";
+            _activeSeasonEntryFee = 0;
             RebuildTournamentPanel();
             yield break;
         }
@@ -498,27 +503,75 @@ public class AppManager : MonoBehaviour
         if (!string.IsNullOrEmpty(resolveErr) || string.IsNullOrEmpty(seasonId))
         {
             _tournamentHighScoreDisplay = "—";
+            _activeSeasonEntryFee = 0;
             RebuildTournamentPanel();
             yield break;
         }
 
-        string detailBody = null;
+        SeasonDetailDto detail = null;
         string detailErr = null;
         yield return _backendApi.GetSeasonDetail(
             _state.AccessToken,
             seasonId,
-            t => detailBody = t,
+            d => detail = d,
             e => detailErr = e);
 
-        if (!string.IsNullOrEmpty(detailErr) || string.IsNullOrEmpty(detailBody))
+        if (!string.IsNullOrEmpty(detailErr) || detail == null)
         {
             _tournamentHighScoreDisplay = "—";
+            _activeSeasonEntryFee = 0;
             RebuildTournamentPanel();
             yield break;
         }
 
-        _tournamentHighScoreDisplay = SeasonDetailBestScoreParser.FormatHighScoreDisplay(detailBody);
+        _activeSeasonEntryFee = detail.entryFee > 0 ? detail.entryFee : tournamentEntryPrice;
+        _state.IsPremium = detail.entered;
+        _tournamentHighScoreDisplay = detail.entered ? detail.bestScore.ToString() : "—";
+
+        Debug.Log($"Tournament data refreshed. entered={detail.entered}, entryFee={detail.entryFee}, bestScore={detail.bestScore}");
+
         RebuildTournamentPanel();
+    }
+
+    private IEnumerator EnterSeasonFlow()
+    {
+        NotifyTournamentFlow("Entering season…");
+
+        string seasonId = null;
+        string resolveErr = null;
+        yield return ResolveActiveSeasonIdForTournament(
+            id => seasonId = id,
+            e => resolveErr = e);
+
+        if (!string.IsNullOrEmpty(resolveErr) || string.IsNullOrEmpty(seasonId))
+        {
+            NotifyTournamentFlow("Seasons: " + (resolveErr ?? "failed"));
+            yield break;
+        }
+
+        EnterSeasonResponse enterResponse = null;
+        string enterErr = null;
+        yield return _backendApi.EnterSeason(
+            _state.AccessToken,
+            seasonId,
+            r => enterResponse = r,
+            e => enterErr = e);
+
+        if (!string.IsNullOrEmpty(enterErr))
+        {
+            NotifyTournamentFlow("Enter season: " + enterErr);
+            yield break;
+        }
+
+        if (enterResponse != null)
+            _state.SoftCurrency = enterResponse.raceCoinsBalance;
+
+        _state.IsPremium = true;
+
+        SaveProfileCache();
+        RebuildPanels();
+        RefreshAllViews();
+        NotifyTournamentFlow("");
     }
 
     private IEnumerator StartTournamentRaceFlow()
@@ -537,11 +590,12 @@ public class AppManager : MonoBehaviour
             yield break;
         }
 
+        EnterSeasonResponse enterResponse = null;
         string enterErr = null;
         yield return _backendApi.EnterSeason(
             _state.AccessToken,
             seasonId,
-            () => { },
+            r => enterResponse = r,
             e => enterErr = e);
 
         if (!string.IsNullOrEmpty(enterErr))
@@ -549,6 +603,11 @@ public class AppManager : MonoBehaviour
             NotifyTournamentFlow("Season enter: " + enterErr);
             yield break;
         }
+
+        if (enterResponse != null)
+            _state.SoftCurrency = enterResponse.raceCoinsBalance;
+
+        _state.IsPremium = true;
 
         SeasonRaceStartResponse startResponse = null;
         string startErr = null;
