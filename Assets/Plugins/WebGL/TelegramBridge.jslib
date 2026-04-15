@@ -114,20 +114,23 @@ mergeInto(LibraryManager.library, {
       const gameObjectName = UTF8ToString(gameObjectPtr);
       const callbackMethodName = UTF8ToString(callbackMethodPtr);
 
+      function sendToUnity(msg) {
+        var inst = window.unityInstance || (typeof unityInstance !== "undefined" ? unityInstance : null);
+        if (inst) {
+          inst.SendMessage(gameObjectName, callbackMethodName, msg);
+        } else {
+          console.warn("[TgOpenInvoice] unityInstance not found — cannot deliver callback '" + msg + "' to Unity. Ensure window.unityInstance is set in the HTML template after createUnityInstance resolves.");
+        }
+      }
+
       if (!window.Telegram || !window.Telegram.WebApp) {
         console.error("Telegram WebApp API not found");
-
-        if (typeof unityInstance !== "undefined" && unityInstance != null) {
-          unityInstance.SendMessage(gameObjectName, callbackMethodName, "telegram_unavailable");
-        }
-
+        sendToUnity("telegram_unavailable");
         return;
       }
 
       window.Telegram.WebApp.openInvoice(url, function (status) {
-        if (typeof unityInstance !== "undefined" && unityInstance != null) {
-          unityInstance.SendMessage(gameObjectName, callbackMethodName, status || "");
-        }
+        sendToUnity(status || "");
       });
     } catch (e) {
       console.error(e);
