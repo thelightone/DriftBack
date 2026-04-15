@@ -273,7 +273,7 @@ public class BackendApi
         Debug.Log("GetSeasons response code: " + request.responseCode);
         Debug.Log("GetSeasons response text: " + request.downloadHandler.text);
 
-        if (request.responseCode != 200)
+        if (request.result != UnityWebRequest.Result.Success)
         {
             onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
             yield break;
@@ -304,7 +304,7 @@ public class BackendApi
     public IEnumerator GetSeasonDetail(
         string accessToken,
         string seasonId,
-        Action<string> onSuccess,
+        Action<SeasonDetailDto> onSuccess,
         Action<string> onError)
     {
         string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId);
@@ -321,27 +321,38 @@ public class BackendApi
         Debug.Log("GetSeasonDetail response code: " + request.responseCode);
         Debug.Log("GetSeasonDetail response text: " + request.downloadHandler.text);
 
-        if (request.responseCode != 200)
+        if (request.result != UnityWebRequest.Result.Success)
         {
             onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
             yield break;
         }
 
-        string body = request.downloadHandler.text;
-        if (string.IsNullOrEmpty(body))
+        SeasonDetailDto response = null;
+
+        try
         {
-            onError?.Invoke("GetSeasonDetail empty body");
+            response = JsonUtility.FromJson<SeasonDetailDto>(request.downloadHandler.text);
+        }
+        catch (Exception e)
+        {
+            onError?.Invoke("GetSeasonDetail parse error: " + e.Message);
+            yield break;
+        }
+
+        if (response == null)
+        {
+            onError?.Invoke("GetSeasonDetail response is null");
             yield break;
         }
 
         Debug.Log("=== GET SEASON DETAIL END ===");
-        onSuccess?.Invoke(body);
+        onSuccess?.Invoke(response);
     }
 
     public IEnumerator EnterSeason(
         string accessToken,
         string seasonId,
-        Action onSuccess,
+        Action<EnterSeasonResponse> onSuccess,
         Action<string> onError)
     {
         string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId) + "/enter";
@@ -361,11 +372,30 @@ public class BackendApi
         Debug.Log("EnterSeason response code: " + request.responseCode);
         Debug.Log("EnterSeason response text: " + request.downloadHandler.text);
 
-        long code = request.responseCode;
-        if (code == 200 || code == 409)
+        if (request.result == UnityWebRequest.Result.Success)
         {
+            EnterSeasonResponse response = null;
+
+            try
+            {
+                response = JsonUtility.FromJson<EnterSeasonResponse>(request.downloadHandler.text);
+            }
+            catch (Exception e)
+            {
+                onError?.Invoke("EnterSeason parse error: " + e.Message);
+                yield break;
+            }
+
             Debug.Log("=== ENTER SEASON END ===");
-            onSuccess?.Invoke();
+            onSuccess?.Invoke(response);
+            yield break;
+        }
+
+        if (request.responseCode == 409)
+        {
+            Debug.Log("EnterSeason: already entered (409), treating as success");
+            Debug.Log("=== ENTER SEASON END (already entered) ===");
+            onSuccess?.Invoke(null);
             yield break;
         }
 
@@ -395,7 +425,7 @@ public class BackendApi
         Debug.Log("StartSeasonRace response code: " + request.responseCode);
         Debug.Log("StartSeasonRace response text: " + request.downloadHandler.text);
 
-        if (request.responseCode != 200)
+        if (request.result != UnityWebRequest.Result.Success)
         {
             onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
             yield break;
@@ -449,7 +479,7 @@ public class BackendApi
         Debug.Log("FinishSeasonRace response code: " + request.responseCode);
         Debug.Log("FinishSeasonRace response text: " + request.downloadHandler.text);
 
-        if (request.responseCode != 200)
+        if (request.result != UnityWebRequest.Result.Success)
         {
             onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
             yield break;
