@@ -23,7 +23,7 @@ public class AppManager : MonoBehaviour
     [Header("Backend")]
     [SerializeField] private string backendBaseUrl = "https://your-backend-url.com";
 
-    private static readonly float[] PaidInvoiceGarageRetryDelays = { 1f, 2f, 2f, 2f };
+    private static readonly float[] PaidInvoiceGarageRetryDelays = { 2f, 3f, 5f, 8f, 12f };
 
     private AppState _state;
     private TelegramBridge _telegramBridge;
