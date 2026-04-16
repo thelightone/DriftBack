@@ -16,6 +16,7 @@ public class AppManager : MonoBehaviour
     [SerializeField] private GaragePanelView garagePanelView;
     [SerializeField] private BuyCurrencyPanelView buyCurrencyPanelView;
     [SerializeField] private TournamentPanelView tournamentPanelView;
+    [SerializeField] private LeaderboardPanelView leaderboardPanelView;
     [SerializeField] private GarageCatalog garageCatalog;
     [SerializeField] private CurrencyPackCatalog currencyPackCatalog;
     [SerializeField] private SceneLoader sceneLoader;
@@ -351,6 +352,29 @@ public class AppManager : MonoBehaviour
             view.ShowMainPanel();
     }
 
+    public void OnOpenLeaderboardClicked()
+    {
+        Debug.Log("OnOpenLeaderboardClicked called");
+
+        if (view != null)
+            view.ShowLeaderboardPanel();
+
+        if (leaderboardPanelView == null)
+        {
+            if (view != null)
+                view.ShowStatus("LeaderboardPanelView is not assigned");
+            return;
+        }
+
+        StartCoroutine(RefreshLeaderboardCoroutine());
+    }
+
+    public void OnCloseLeaderboardClicked()
+    {
+        if (view != null)
+            view.ShowTournamentPanel();
+    }
+
     public void OnBuyTournamentAccessClicked()
     {
         if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
@@ -531,6 +555,49 @@ public class AppManager : MonoBehaviour
         Debug.Log($"Tournament data refreshed. entered={detail.entered}, entryFee={detail.entryFee}, bestScore={detail.bestScore}");
 
         RebuildTournamentPanel();
+    }
+
+    private IEnumerator RefreshLeaderboardCoroutine()
+    {
+        if (leaderboardPanelView == null)
+            yield break;
+
+        if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
+        {
+            leaderboardPanelView.ShowError("Authorize first (init)");
+            yield break;
+        }
+
+        leaderboardPanelView.ShowLoading("Top players");
+
+        string seasonId = null;
+        string resolveErr = null;
+        yield return ResolveActiveSeasonIdForTournament(
+            id => seasonId = id,
+            e => resolveErr = e);
+
+        if (!string.IsNullOrEmpty(resolveErr) || string.IsNullOrEmpty(seasonId))
+        {
+            leaderboardPanelView.ShowError("Seasons: " + (resolveErr ?? "failed"));
+            yield break;
+        }
+
+        LeaderboardResponse response = null;
+        string leaderboardErr = null;
+        yield return _backendApi.GetSeasonLeaderboard(
+            _state.AccessToken,
+            seasonId,
+            10,
+            r => response = r,
+            e => leaderboardErr = e);
+
+        if (!string.IsNullOrEmpty(leaderboardErr) || response == null)
+        {
+            leaderboardPanelView.ShowError("Leaderboard: " + (leaderboardErr ?? "failed"));
+            yield break;
+        }
+
+        leaderboardPanelView.ShowEntries("Top 10", response.entries);
     }
 
     private IEnumerator EnterSeasonFlow()
@@ -841,7 +908,7 @@ public class AppManager : MonoBehaviour
 
         if (view != null)
             view.ShowStatus("Profile refreshed");
-
+трубопров
         Debug.Log("=== REFRESH FLOW END ===");
     }
 

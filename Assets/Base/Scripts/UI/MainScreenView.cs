@@ -36,6 +36,7 @@ public class MainScreenView : MonoBehaviour
     public GameObject garagePanelRoot;
     public GameObject buyCurrencyPanelRoot;
     public GameObject tournamentPanelRoot;
+    public GameObject leaderboardPanelRoot;
 
     public void ShowTelegramData(bool available, TelegramUserData user, string initData)
     {
@@ -132,6 +133,7 @@ public class MainScreenView : MonoBehaviour
         SetPanel(garagePanelRoot, false);
         SetPanel(buyCurrencyPanelRoot, false);
         SetPanel(tournamentPanelRoot, false);
+        SetPanel(leaderboardPanelRoot, false);
     }
 
     public void ShowGaragePanel()
@@ -142,6 +144,7 @@ public class MainScreenView : MonoBehaviour
         SetPanel(garagePanelRoot, true);
         SetPanel(buyCurrencyPanelRoot, false);
         SetPanel(tournamentPanelRoot, false);
+        SetPanel(leaderboardPanelRoot, false);
     }
 
     public void ShowBuyCurrencyPanel()
@@ -153,6 +156,7 @@ public class MainScreenView : MonoBehaviour
         SetPanel(garagePanelRoot, false);
         SetPanel(buyCurrencyPanelRoot, true);
         SetPanel(tournamentPanelRoot, false);
+        SetPanel(leaderboardPanelRoot, false);
     }
 
     public void ShowTournamentPanel()
@@ -163,6 +167,18 @@ public class MainScreenView : MonoBehaviour
         SetPanel(garagePanelRoot, false);
         SetPanel(buyCurrencyPanelRoot, false);
         SetPanel(tournamentPanelRoot, true);
+        SetPanel(leaderboardPanelRoot, false);
+    }
+
+    public void ShowLeaderboardPanel()
+    {
+        Debug.Log("ShowLeaderboardPanel called");
+
+        SetPanel(mainPanelRoot, false);
+        SetPanel(garagePanelRoot, false);
+        SetPanel(buyCurrencyPanelRoot, false);
+        SetPanel(tournamentPanelRoot, false);
+        SetPanel(leaderboardPanelRoot, true);
     }
 
     private void SetPanel(GameObject panel, bool state)

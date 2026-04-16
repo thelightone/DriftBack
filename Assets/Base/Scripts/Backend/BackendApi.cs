@@ -506,4 +506,54 @@ public class BackendApi
         Debug.Log("=== SEASON RACE FINISH END ===");
         onSuccess?.Invoke(response);
     }
+
+    public IEnumerator GetSeasonLeaderboard(
+        string accessToken,
+        string seasonId,
+        int limit,
+        Action<LeaderboardResponse> onSuccess,
+        Action<string> onError)
+    {
+        int safeLimit = Mathf.Clamp(limit, 1, 100);
+        string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId) + "/leaderboard?limit=" + safeLimit;
+
+        Debug.Log("=== GET SEASON LEADERBOARD START ===");
+        Debug.Log("GET " + url);
+
+        using var request = UnityWebRequest.Get(url);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        Debug.Log("GetSeasonLeaderboard response code: " + request.responseCode);
+        Debug.Log("GetSeasonLeaderboard response text: " + request.downloadHandler.text);
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
+            yield break;
+        }
+
+        LeaderboardResponse response = null;
+
+        try
+        {
+            response = JsonUtility.FromJson<LeaderboardResponse>(request.downloadHandler.text);
+        }
+        catch (Exception e)
+        {
+            onError?.Invoke("GetSeasonLeaderboard parse error: " + e.Message);
+            yield break;
+        }
+
+        if (response == null)
+        {
+            onError?.Invoke("GetSeasonLeaderboard response is null");
+            yield break;
+        }
+
+        Debug.Log("=== GET SEASON LEADERBOARD END ===");
+        onSuccess?.Invoke(response);
+    }
 }

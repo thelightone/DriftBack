@@ -12,7 +12,7 @@ public class TournamentPanelView : MonoBehaviour
     public TMP_Text entryPriceText;
     [Tooltip("Лучший счёт игрока в текущем турнире (сезоне), с бэкенда.")]
     public TMP_Text tournamentHighScoreText;
-    [SerializeField] private string tournamentHighScoreLabelPrefix = "Best score:";
+    [SerializeField] private string tournamentHighScoreLabelPrefix = "";
 
     private string _primaryBalanceLine;
 
@@ -43,8 +43,9 @@ public class TournamentPanelView : MonoBehaviour
         if (tournamentHighScoreText != null)
         {
             string value = string.IsNullOrEmpty(tournamentHighScoreDisplay) ? "—" : tournamentHighScoreDisplay;
-            string prefix = string.IsNullOrEmpty(tournamentHighScoreLabelPrefix) ? "Best score:" : tournamentHighScoreLabelPrefix;
-            tournamentHighScoreText.text = prefix + " " + value;
+            tournamentHighScoreText.text = string.IsNullOrEmpty(tournamentHighScoreLabelPrefix)
+                ? value
+                : tournamentHighScoreLabelPrefix + " " + value;
         }
 
         if (buyAccessButton != null)
