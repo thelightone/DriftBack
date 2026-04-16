@@ -956,6 +956,11 @@ public class AppManager : MonoBehaviour
                 _invoiceBalanceSnapshot = _state.SoftCurrency;
                 Debug.Log("Calling TelegramBridge.OpenInvoice for coins bundle...");
                 _telegramBridge.OpenInvoice(response.invoiceUrl, gameObject.name, nameof(OnInvoiceClosed));
+
+                if (_invoiceRefreshCoroutine != null)
+                    StopCoroutine(_invoiceRefreshCoroutine);
+                _invoiceRefreshCoroutine = StartCoroutine(PollGarageUntilBalanceChanges(_invoiceBalanceSnapshot));
+
                 done = true;
             },
             error =>
@@ -1077,45 +1082,29 @@ public class AppManager : MonoBehaviour
         Debug.Log("=== BUY CAR FLOW END ===");
     }
 
-    private IEnumerator RefreshGarageAfterPaidInvoiceFlow()
+    private IEnumerator PollGarageUntilBalanceChanges(int balanceSnapshot)
     {
-        Debug.Log("=== PAID INVOICE REFRESH START ===");
-
-        int balanceBeforeInvoice = _invoiceBalanceSnapshot;
-        bool balanceUpdated = false;
+        Debug.Log("=== BALANCE POLL START (snapshot=" + balanceSnapshot + ") ===");
 
         for (int i = 0; i < PaidInvoiceGarageRetryDelays.Length; i++)
         {
-            float delay = PaidInvoiceGarageRetryDelays[i];
-            int attemptNumber = i + 1;
-
-            ShowPurchaseStatus($"Payment received. Syncing balance ({attemptNumber}/{PaidInvoiceGarageRetryDelays.Length})...");
-
-            yield return new WaitForSecondsRealtime(delay);
+            yield return new WaitForSecondsRealtime(PaidInvoiceGarageRetryDelays[i]);
             yield return LoadGarageFlow();
-
             SaveProfileCache();
 
-            if (_state.SoftCurrency != balanceBeforeInvoice)
+            if (_state.SoftCurrency != balanceSnapshot)
             {
-                balanceUpdated = true;
-                Debug.Log("Paid invoice refresh detected updated balance on attempt " + attemptNumber);
-                break;
+                Debug.Log("Balance updated on poll attempt " + (i + 1) + ". New balance=" + _state.SoftCurrency);
+                ShowPurchaseStatus("Balance updated: " + _state.SoftCurrency + " RC");
+                _invoiceRefreshCoroutine = null;
+                yield break;
             }
 
-            Debug.LogWarning(
-                "Paid invoice refresh attempt " + attemptNumber +
-                " finished with unchanged balance. Snapshot=" + balanceBeforeInvoice +
-                ", Current=" + _state.SoftCurrency);
+            Debug.LogWarning("Poll attempt " + (i + 1) + ": balance unchanged (" + _state.SoftCurrency + ")");
         }
 
-        if (balanceUpdated)
-            ShowPurchaseStatus("Payment confirmed. Balance updated.");
-        else
-            ShowPurchaseStatus("Payment confirmed, but balance sync is still pending. Try refresh in a moment.");
-
+        Debug.LogWarning("=== BALANCE POLL: all attempts exhausted, balance unchanged ===");
         _invoiceRefreshCoroutine = null;
-        Debug.Log("=== PAID INVOICE REFRESH END ===");
     }
 
     private void ShowPurchaseStatus(string status)
@@ -1131,20 +1120,19 @@ public class AppManager : MonoBehaviour
         Debug.Log("=== INVOICE CLOSED ===");
         Debug.Log("Invoice status: " + status);
 
+        if (string.Equals(status, "paid", StringComparison.OrdinalIgnoreCase))
+        {
+            ShowPurchaseStatus("Payment confirmed!");
+            return;
+        }
+
         if (_invoiceRefreshCoroutine != null)
         {
             StopCoroutine(_invoiceRefreshCoroutine);
             _invoiceRefreshCoroutine = null;
         }
 
-        if (string.Equals(status, "paid", StringComparison.OrdinalIgnoreCase))
-        {
-            ShowPurchaseStatus("Invoice paid. Waiting for backend balance sync...");
-            _invoiceRefreshCoroutine = StartCoroutine(RefreshGarageAfterPaidInvoiceFlow());
-            return;
-        }
-
-        ShowPurchaseStatus("Invoice closed: " + status + ". Refreshing profile...");
+        ShowPurchaseStatus("Invoice closed: " + status);
         StartCoroutine(RefreshFlow());
     }
 
