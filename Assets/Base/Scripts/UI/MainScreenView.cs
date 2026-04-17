@@ -18,6 +18,8 @@ public class MainScreenView : MonoBehaviour
     public TMP_Text premiumText;
     public TMP_Text trainingPointsText;
     public TMP_Text tournamentPointsText;
+    public TMP_Text currentTournamentRecordText;
+    public TMP_Text tournamentPlaceText;
     public TMP_Text softCurrencyText;
     public TMP_Text selectedCarText;
     public Image selectedCarPreviewImage;
@@ -72,6 +74,8 @@ public class MainScreenView : MonoBehaviour
         bool isPremium,
         int trainingPoints,
         int tournamentPoints,
+        string currentTournamentRecord,
+        string tournamentPlace,
         int softCurrency,
         string selectedCarId,
         string error,
@@ -92,6 +96,12 @@ public class MainScreenView : MonoBehaviour
 
         if (tournamentPointsText != null)
             tournamentPointsText.text = tournamentPoints.ToString();
+
+        if (currentTournamentRecordText != null)
+            currentTournamentRecordText.text = string.IsNullOrWhiteSpace(currentTournamentRecord) ? "—" : currentTournamentRecord;
+
+        if (tournamentPlaceText != null)
+            tournamentPlaceText.text = string.IsNullOrWhiteSpace(tournamentPlace) ? "—" : tournamentPlace;
 
         if (softCurrencyText != null)
             softCurrencyText.text = softCurrency + " RC";

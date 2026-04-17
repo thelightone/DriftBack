@@ -14,6 +14,12 @@ public class TournamentPanelView : MonoBehaviour
     public TMP_Text tournamentHighScoreText;
     [SerializeField] private string tournamentHighScoreLabelPrefix = "";
 
+    [Tooltip("Текущее место игрока в рейтинге сезона (передаётся уже с префиксом #).")]
+    public TMP_Text tournamentRatingPlaceText;
+
+    [Tooltip("Очки лидера рейтинга (1-е место).")]
+    public TMP_Text firstPlaceScoreText;
+
     private string _primaryBalanceLine;
 
     [Header("Buttons")]
@@ -27,7 +33,9 @@ public class TournamentPanelView : MonoBehaviour
         int entryPrice,
         string selectedCarId,
         bool isPremium,
-        string tournamentHighScoreDisplay
+        string tournamentHighScoreDisplay,
+        string ratingPlaceDisplay,
+        string firstPlaceScoreDisplay
     )
     {
         _primaryBalanceLine = softCurrency + " RC";
@@ -47,6 +55,12 @@ public class TournamentPanelView : MonoBehaviour
                 ? value
                 : tournamentHighScoreLabelPrefix + " " + value;
         }
+
+        if (tournamentRatingPlaceText != null)
+            tournamentRatingPlaceText.text = string.IsNullOrWhiteSpace(ratingPlaceDisplay) ? "—" : ratingPlaceDisplay;
+
+        if (firstPlaceScoreText != null)
+            firstPlaceScoreText.text = string.IsNullOrWhiteSpace(firstPlaceScoreDisplay) ? "—" : firstPlaceScoreDisplay;
 
         if (buyAccessButton != null)
             buyAccessButton.gameObject.SetActive(!isPremium);

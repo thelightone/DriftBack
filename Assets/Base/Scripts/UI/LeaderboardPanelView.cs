@@ -3,13 +3,20 @@ using UnityEngine;
 
 public class LeaderboardPanelView : MonoBehaviour
 {
+    private const int TopCount = 10;
+
     [Header("Status")]
     public TMP_Text titleText;
     public TMP_Text statusText;
 
-    [Header("Top 10 lines")]
-    [Tooltip("Assign 10 TMP_Text elements (1..10). Each line will be formatted like: \"1. @username — 123\".")]
-    public TMP_Text[] entryLines;
+    [Header("Current player")]
+    public TMP_Text playerRankText;
+    public TMP_Text playerNameText;
+    public TMP_Text playerScoreText;
+
+    [Header("Top 10 — separate columns")]
+    public TMP_Text[] usernameLines;
+    public TMP_Text[] scoreLines;
 
     public void ShowLoading(string title = "Leaderboard")
     {
@@ -19,6 +26,7 @@ public class LeaderboardPanelView : MonoBehaviour
         if (statusText != null)
             statusText.text = "Loading…";
 
+        SetCurrentPlayerSummary("…", "…", "…");
         ClearLines();
     }
 
@@ -27,10 +35,11 @@ public class LeaderboardPanelView : MonoBehaviour
         if (statusText != null)
             statusText.text = message;
 
+        SetCurrentPlayerSummary("—", "—", "—");
         ClearLines();
     }
 
-    public void ShowEntries(string title, LeaderboardEntryDto[] entries)
+    public void ShowEntries(string title, LeaderboardEntryDto[] entries, LeaderboardEntryDto currentPlayer)
     {
         if (titleText != null)
             titleText.text = title;
@@ -38,39 +47,69 @@ public class LeaderboardPanelView : MonoBehaviour
         if (statusText != null)
             statusText.text = "";
 
-        if (entryLines == null || entryLines.Length == 0)
-            return;
+        ApplyCurrentPlayerSummary(currentPlayer);
 
-        for (int i = 0; i < entryLines.Length; i++)
+        for (int i = 0; i < TopCount; i++)
         {
-            var line = entryLines[i];
-            if (line == null)
-                continue;
-
             var entry = (entries != null && i < entries.Length) ? entries[i] : null;
-            line.text = entry != null
-                ? FormatEntry(entry)
-                : (i + 1) + ". —";
+            SetLine(i, entry);
         }
+    }
+
+    private void SetLine(int index, LeaderboardEntryDto entry)
+    {
+        if (usernameLines != null && index < usernameLines.Length && usernameLines[index] != null)
+            usernameLines[index].text = entry != null ? ResolveDisplayName(entry) : "—";
+
+        if (scoreLines != null && index < scoreLines.Length && scoreLines[index] != null)
+            scoreLines[index].text = entry != null ? entry.bestScore.ToString() : "—";
     }
 
     private void ClearLines()
     {
-        if (entryLines == null)
-            return;
-
-        for (int i = 0; i < entryLines.Length; i++)
+        if (usernameLines != null)
         {
-            if (entryLines[i] != null)
-                entryLines[i].text = "";
+            for (int i = 0; i < usernameLines.Length; i++)
+            {
+                if (usernameLines[i] != null)
+                    usernameLines[i].text = "";
+            }
+        }
+
+        if (scoreLines != null)
+        {
+            for (int i = 0; i < scoreLines.Length; i++)
+            {
+                if (scoreLines[i] != null)
+                    scoreLines[i].text = "";
+            }
         }
     }
 
-    private string FormatEntry(LeaderboardEntryDto e)
+    private void ApplyCurrentPlayerSummary(LeaderboardEntryDto currentPlayer)
     {
-        string name = ResolveDisplayName(e);
-        string rank = e.rank > 0 ? e.rank.ToString() : "?";
-        return rank + ". " + name + " — " + e.bestScore;
+        if (currentPlayer == null || currentPlayer.rank <= 0)
+        {
+            SetCurrentPlayerSummary("—", "—", "—");
+            return;
+        }
+
+        SetCurrentPlayerSummary(
+            currentPlayer.rank.ToString(),
+            ResolveDisplayName(currentPlayer),
+            currentPlayer.bestScore.ToString());
+    }
+
+    private void SetCurrentPlayerSummary(string rank, string name, string score)
+    {
+        if (playerRankText != null)
+            playerRankText.text = rank;
+
+        if (playerNameText != null)
+            playerNameText.text = name;
+
+        if (playerScoreText != null)
+            playerScoreText.text = score;
     }
 
     private string ResolveDisplayName(LeaderboardEntryDto e)
@@ -87,4 +126,3 @@ public class LeaderboardPanelView : MonoBehaviour
         return "Player";
     }
 }
-

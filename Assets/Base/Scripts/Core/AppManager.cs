@@ -33,6 +33,10 @@ public class AppManager : MonoBehaviour
     private Coroutine _invoiceRefreshCoroutine;
     private int _invoiceBalanceSnapshot;
     private string _tournamentHighScoreDisplay = "—";
+    private string _mainPanelTournamentRecordDisplay = "—";
+    private string _mainPanelTournamentPlaceDisplay = "—";
+    private string _tournamentPanelRatingPlaceDisplay = "—";
+    private string _tournamentPanelFirstPlaceScoreDisplay = "—";
     private int _activeSeasonEntryFee = 0;
 
     private void Awake()
@@ -147,6 +151,8 @@ public class AppManager : MonoBehaviour
                 _state.IsPremium,
                 _state.TrainingPoints,
                 _state.TournamentPoints,
+                _mainPanelTournamentRecordDisplay,
+                _mainPanelTournamentPlaceDisplay,
                 _state.SoftCurrency,
                 _state.SelectedCarId,
                 error,
@@ -217,8 +223,109 @@ public class AppManager : MonoBehaviour
             ActiveSeasonEntryFee(),
             _state.SelectedCarId,
             _state.IsPremium,
-            _tournamentHighScoreDisplay
+            _tournamentHighScoreDisplay,
+            _tournamentPanelRatingPlaceDisplay,
+            _tournamentPanelFirstPlaceScoreDisplay
         );
+    }
+
+    private void ResetMainPanelTournamentStats()
+    {
+        _mainPanelTournamentRecordDisplay = "—";
+        _mainPanelTournamentPlaceDisplay = "—";
+        _tournamentPanelRatingPlaceDisplay = "—";
+        _tournamentPanelFirstPlaceScoreDisplay = "—";
+    }
+
+    private void ApplyLeaderboardResponseToRatingUi(LeaderboardResponse response, string leaderboardErr)
+    {
+        _mainPanelTournamentPlaceDisplay = "—";
+        _tournamentPanelRatingPlaceDisplay = "—";
+        _tournamentPanelFirstPlaceScoreDisplay = "—";
+
+        if (!string.IsNullOrEmpty(leaderboardErr) || response == null)
+            return;
+
+        if (response.currentPlayer != null && response.currentPlayer.rank > 0)
+        {
+            string placeText = "#" + response.currentPlayer.rank;
+            _mainPanelTournamentPlaceDisplay = placeText;
+            _tournamentPanelRatingPlaceDisplay = placeText;
+        }
+
+        int leaderScore = -1;
+        if (response.entries != null)
+        {
+            for (int i = 0; i < response.entries.Length; i++)
+            {
+                var entry = response.entries[i];
+                if (entry != null && entry.rank == 1)
+                {
+                    leaderScore = entry.bestScore;
+                    break;
+                }
+            }
+
+            if (leaderScore < 0 && response.entries.Length > 0 && response.entries[0] != null)
+                leaderScore = response.entries[0].bestScore;
+        }
+
+        if (leaderScore >= 0)
+            _tournamentPanelFirstPlaceScoreDisplay = leaderScore.ToString();
+    }
+
+    private IEnumerator RefreshMainPanelTournamentStatsCoroutine()
+    {
+        if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
+        {
+            ResetMainPanelTournamentStats();
+            RefreshAllViews();
+            yield break;
+        }
+
+        string seasonId = null;
+        string resolveErr = null;
+        yield return ResolveActiveSeasonIdForTournament(
+            id => seasonId = id,
+            e => resolveErr = e);
+
+        if (!string.IsNullOrEmpty(resolveErr) || string.IsNullOrEmpty(seasonId))
+        {
+            ResetMainPanelTournamentStats();
+            RefreshAllViews();
+            yield break;
+        }
+
+        SeasonDetailDto detail = null;
+        string detailErr = null;
+        yield return _backendApi.GetSeasonDetail(
+            _state.AccessToken,
+            seasonId,
+            d => detail = d,
+            e => detailErr = e);
+
+        if (!string.IsNullOrEmpty(detailErr) || detail == null)
+        {
+            ResetMainPanelTournamentStats();
+            RefreshAllViews();
+            yield break;
+        }
+
+        _mainPanelTournamentRecordDisplay = detail.entered ? detail.bestScore.ToString() : "—";
+        _mainPanelTournamentPlaceDisplay = "—";
+
+        LeaderboardResponse leaderboardResponse = null;
+        string leaderboardErr = null;
+        yield return _backendApi.GetSeasonLeaderboard(
+            _state.AccessToken,
+            seasonId,
+            10,
+            r => leaderboardResponse = r,
+            e => leaderboardErr = e);
+
+        ApplyLeaderboardResponseToRatingUi(leaderboardResponse, leaderboardErr);
+
+        RefreshAllViews();
     }
 
     private void EnsureSelectedCarValid()
@@ -372,7 +479,7 @@ public class AppManager : MonoBehaviour
     public void OnCloseLeaderboardClicked()
     {
         if (view != null)
-            view.ShowTournamentPanel();
+            view.ShowMainPanel();
     }
 
     public void OnBuyTournamentAccessClicked()
@@ -511,11 +618,15 @@ public class AppManager : MonoBehaviour
         {
             _tournamentHighScoreDisplay = "—";
             _activeSeasonEntryFee = 0;
+            ResetMainPanelTournamentStats();
             RebuildTournamentPanel();
+            RefreshAllViews();
             yield break;
         }
 
         _tournamentHighScoreDisplay = "…";
+        _tournamentPanelRatingPlaceDisplay = "…";
+        _tournamentPanelFirstPlaceScoreDisplay = "…";
         RebuildTournamentPanel();
 
         string seasonId = null;
@@ -528,7 +639,9 @@ public class AppManager : MonoBehaviour
         {
             _tournamentHighScoreDisplay = "—";
             _activeSeasonEntryFee = 0;
+            ResetMainPanelTournamentStats();
             RebuildTournamentPanel();
+            RefreshAllViews();
             yield break;
         }
 
@@ -544,17 +657,33 @@ public class AppManager : MonoBehaviour
         {
             _tournamentHighScoreDisplay = "—";
             _activeSeasonEntryFee = 0;
+            ResetMainPanelTournamentStats();
             RebuildTournamentPanel();
+            RefreshAllViews();
             yield break;
         }
 
         _activeSeasonEntryFee = detail.entryFee > 0 ? detail.entryFee : tournamentEntryPrice;
         _state.IsPremium = detail.entered;
         _tournamentHighScoreDisplay = detail.entered ? detail.bestScore.ToString() : "—";
+        _mainPanelTournamentRecordDisplay = _tournamentHighScoreDisplay;
+        _mainPanelTournamentPlaceDisplay = "—";
+
+        LeaderboardResponse leaderboardResponse = null;
+        string leaderboardErr = null;
+        yield return _backendApi.GetSeasonLeaderboard(
+            _state.AccessToken,
+            seasonId,
+            10,
+            r => leaderboardResponse = r,
+            e => leaderboardErr = e);
+
+        ApplyLeaderboardResponseToRatingUi(leaderboardResponse, leaderboardErr);
 
         Debug.Log($"Tournament data refreshed. entered={detail.entered}, entryFee={detail.entryFee}, bestScore={detail.bestScore}");
 
         RebuildTournamentPanel();
+        RefreshAllViews();
     }
 
     private IEnumerator RefreshLeaderboardCoroutine()
@@ -597,7 +726,7 @@ public class AppManager : MonoBehaviour
             yield break;
         }
 
-        leaderboardPanelView.ShowEntries("Top 10", response.entries);
+        leaderboardPanelView.ShowEntries("Top 10", response.entries, response.currentPlayer);
     }
 
     private IEnumerator EnterSeasonFlow()
@@ -638,6 +767,7 @@ public class AppManager : MonoBehaviour
         SaveProfileCache();
         RebuildPanels();
         RefreshAllViews();
+        yield return StartCoroutine(RefreshMainPanelTournamentStatsCoroutine());
         NotifyTournamentFlow("");
     }
 
@@ -882,6 +1012,7 @@ public class AppManager : MonoBehaviour
         Debug.Log("Auth completed -> loading garage...");
 
         yield return StartCoroutine(LoadGarageFlow());
+        yield return StartCoroutine(RefreshMainPanelTournamentStatsCoroutine());
 
         SaveProfileCache();
 
@@ -903,12 +1034,12 @@ public class AppManager : MonoBehaviour
         }
 
         yield return LoadGarageFlow();
+        yield return StartCoroutine(RefreshMainPanelTournamentStatsCoroutine());
 
         SaveProfileCache();
 
         if (view != null)
             view.ShowStatus("Profile refreshed");
-трубопров
         Debug.Log("=== REFRESH FLOW END ===");
     }
 
