@@ -518,16 +518,16 @@ public class AppManager : MonoBehaviour
             return;
         }
 
+        if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
+        {
+            if (view != null)
+                view.ShowStatus("Authorize first (init)");
+            return;
+        }
+
         Debug.Log("Starting training race. PlayerId=" + _state.PlayerId);
 
-        RaceSessionContext.StartTraining(
-            _state.PlayerId,
-            _state.InitData,
-            _state.TelegramUser != null ? _state.TelegramUser.id : 0,
-            backendBaseUrl
-        );
-
-        sceneLoader.StartTrainingGame();
+        StartCoroutine(StartTrainingRaceFlow());
     }
 
     public void OnStartTournamentClicked()
@@ -831,6 +831,49 @@ public class AppManager : MonoBehaviour
             backendBaseUrl);
 
         sceneLoader.StartTournamentGame();
+    }
+
+    private IEnumerator StartTrainingRaceFlow()
+    {
+        string seasonId = null;
+        string resolveErr = null;
+        yield return ResolveActiveSeasonIdForTournament(
+            id => seasonId = id,
+            e => resolveErr = e);
+
+        if (!string.IsNullOrEmpty(resolveErr) || string.IsNullOrEmpty(seasonId))
+        {
+            if (view != null)
+                view.ShowStatus("Training seasons: " + (resolveErr ?? "failed"));
+            yield break;
+        }
+
+        SeasonRaceStartResponse startResponse = null;
+        string startErr = null;
+        yield return _backendApi.StartTrainingRace(
+            _state.AccessToken,
+            seasonId,
+            r => startResponse = r,
+            e => startErr = e);
+
+        if (!string.IsNullOrEmpty(startErr) || startResponse == null)
+        {
+            if (view != null)
+                view.ShowStatus("Training race start: " + (startErr ?? "failed"));
+            yield break;
+        }
+
+        RaceSessionContext.BeginTrainingRace(
+            _state.AccessToken,
+            seasonId,
+            startResponse.raceId,
+            startResponse.seed,
+            _state.PlayerId,
+            _state.InitData,
+            _state.TelegramUser != null ? _state.TelegramUser.id : 0,
+            backendBaseUrl);
+
+        sceneLoader.StartTrainingGame();
     }
 
     public void OnAddCoinsClicked()

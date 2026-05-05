@@ -55,6 +55,28 @@ public static class RaceSessionContext
         BackendRacePrepared = true;
     }
 
+    public static void BeginTrainingRace(
+        string accessToken,
+        string seasonId,
+        string raceId,
+        string seed,
+        string playerId,
+        string initData,
+        long telegramUserId,
+        string backendBaseUrl)
+    {
+        CurrentMode = RaceMode.Training;
+        AccessToken = accessToken ?? "";
+        SeasonId = seasonId ?? "";
+        RaceId = raceId ?? "";
+        Seed = seed ?? "";
+        PlayerId = playerId ?? "";
+        InitData = initData ?? "";
+        TelegramUserId = telegramUserId;
+        BackendBaseUrl = backendBaseUrl ?? "";
+        BackendRacePrepared = true;
+    }
+
     public static void MergeBridgeSnapshot(string playerId, string initData, long telegramUserId, string backendBaseUrl)
     {
         PlayerId = playerId ?? "";

@@ -73,6 +73,7 @@ public class RaceFlowManager : MonoBehaviour
     float _pendingDriftPoints;
     int _accumulatedDriftScore;
     int _finalTimeScore;
+    int _finalRaceCoinsEarned;
     float _smoothedSpeedDisplay;
     bool _isSpeedDisplayInitialized;
 
@@ -80,8 +81,9 @@ public class RaceFlowManager : MonoBehaviour
     public bool IsRaceStarted => _raceStarted && !_raceFinished;
     public bool IsRaceFinished => _raceFinished;
     public int FinalScore => _finalScore;
+    public int FinalRaceCoinsEarned => _finalRaceCoinsEarned;
 
-    public static event Action<float, int> RaceFinished;
+    public static event Action<float, int, int> RaceFinished;
 
     void Awake()
     {
@@ -166,6 +168,7 @@ public class RaceFlowManager : MonoBehaviour
         CommitPendingDriftPoints();
         _raceFinished = true;
         _finalTimeScore = ComputeTimeScore(_elapsedActiveDriving);
+        _finalRaceCoinsEarned = ComputeRaceCoinsEarned(_finalTimeScore);
         _finalScore = _accumulatedDriftScore + _finalTimeScore;
         Time.timeScale = 0f;
 
@@ -174,7 +177,7 @@ public class RaceFlowManager : MonoBehaviour
             uc.enabled = false;
 
         ShowRaceOverUi();
-        RaceFinished?.Invoke(_elapsedActiveDriving, _finalScore);
+        RaceFinished?.Invoke(_elapsedActiveDriving, _finalScore, _finalRaceCoinsEarned);
     }
 
     IEnumerator BeginRaceCountdown()
@@ -186,6 +189,7 @@ public class RaceFlowManager : MonoBehaviour
         _pendingDriftPoints = 0f;
         _accumulatedDriftScore = 0;
         _finalTimeScore = 0;
+        _finalRaceCoinsEarned = 0;
         SetTimerText(FormatTime(0f));
         SetScoreText(0);
         SetDriftGainText(false, 0);
@@ -343,6 +347,11 @@ public class RaceFlowManager : MonoBehaviour
     {
         float t = Mathf.Max(seconds, 0.05f);
         return Mathf.Max(minimumScore, Mathf.RoundToInt(scoreTimeDivisor / t));
+    }
+
+    int ComputeRaceCoinsEarned(int timeScore)
+    {
+        return Mathf.Clamp(timeScore, 1, 20);
     }
 
     static string FormatTime(float seconds)
