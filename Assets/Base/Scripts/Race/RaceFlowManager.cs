@@ -28,6 +28,9 @@ public class RaceFlowManager : MonoBehaviour
     [SerializeField] private float minDriftSlip = 0.35f;
     [SerializeField] private float minDriftAngle = 12f;
     private const int MinDriftGainTextPoints = 10;
+    [SerializeField] private float driftGainFlyDuration = 0.35f;
+    [SerializeField] private float driftGainFlyCornerMargin = 40f;
+    [SerializeField] private float driftGainFlyScaleMultiplier = 0.35f;
     [Tooltip("Финиш засчитывается только после того, как игрок уедет от финишной линии на эту дистанцию.")]
     [SerializeField] private float requiredDistanceFromFinish = 250f;
     [Tooltip("Опционально. Если не назначено, будет найден первый FinishLineTrigger на сцене.")]
@@ -36,6 +39,18 @@ public class RaceFlowManager : MonoBehaviour
     [SerializeField] private float countdownScaleFrom = 0.75f;
     [SerializeField] private float countdownScaleTo = 1.35f;
     [SerializeField] private float countdownFadeOutStart = 0.25f;
+
+    [Header("Countdown audio")]
+    [Tooltip("Один клип на каждую секунду отсчёта (3, 2, 1).")]
+    [SerializeField] private AudioClip countdownTickClip;
+    [Tooltip("Клип на слово «СТАРТ».")]
+    [SerializeField] private AudioClip countdownStartClip;
+    [Tooltip("Задержка тика и звука «СТАРТ» относительно появления цифры/слова (сек).")]
+    [SerializeField] private float countdownSoundDelaySeconds = 1f;
+    [Tooltip("Множитель громкости тика и «СТАРТ» (1 ≈ как в импорте клипа, больше — громче).")]
+    [SerializeField] [Range(0.05f, 3f)] private float countdownSoundVolumeScale = 2f;
+    [Tooltip("Если не задан — будет добавлен AudioSource на этот объект (2D UI-звук).")]
+    [SerializeField] private AudioSource countdownAudioSource;
 
     [Header("UI — назначьте объекты с Canvas вручную")]
     [Tooltip("TextMeshPro — отображение времени заезда")]
@@ -58,6 +73,16 @@ public class RaceFlowManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI raceOverDriftScoreText;
     [SerializeField] private TextMeshProUGUI raceOverTimeBonusText;
     [SerializeField] private TextMeshProUGUI raceOverScoreText;
+    [Tooltip("Формат: + X RC — награда за тренировочный круг (назначьте вручную).")]
+    [SerializeField] private TextMeshProUGUI raceOverRaceCoinsText;
+
+    [Header("Training — Race Coins (RC)")]
+    [Tooltip("Время лучше этого (сек.) даёт максимум монет.")]
+    [SerializeField] private float trainingCoinsFastLapSeconds = 35f;
+    [Tooltip("Время хуже этого (сек.) даёт минимум монет.")]
+    [SerializeField] private float trainingCoinsSlowLapSeconds = 120f;
+    [SerializeField] private int trainingCoinsMin = 1;
+    [SerializeField] private int trainingCoinsMax = 20;
 
     float _elapsedActiveDriving;
     bool _raceStarted;
@@ -73,15 +98,23 @@ public class RaceFlowManager : MonoBehaviour
     float _pendingDriftPoints;
     int _accumulatedDriftScore;
     int _finalTimeScore;
+    int _trainingRaceCoinsEarned;
     float _smoothedSpeedDisplay;
     bool _isSpeedDisplayInitialized;
+    Coroutine _driftGainHideRoutine;
+    bool _driftGainPoseCached;
+    Vector3 _driftGainInitialLocalPosition;
+    Vector3 _driftGainInitialScale;
+    AudioSource _runtimeCountdownAudioSource;
 
     public float ElapsedSeconds => _elapsedActiveDriving;
     public bool IsRaceStarted => _raceStarted && !_raceFinished;
     public bool IsRaceFinished => _raceFinished;
     public int FinalScore => _finalScore;
+    /// <summary>Монеты RC за тренировочный круг (0 не в режиме турнира).</summary>
+    public int TrainingRaceCoinsEarned => _trainingRaceCoinsEarned;
 
-    public static event Action<float, int> RaceFinished;
+    public static event Action<float, int, int> RaceFinished;
 
     void Awake()
     {
@@ -167,6 +200,9 @@ public class RaceFlowManager : MonoBehaviour
         _raceFinished = true;
         _finalTimeScore = ComputeTimeScore(_elapsedActiveDriving);
         _finalScore = _accumulatedDriftScore + _finalTimeScore;
+        _trainingRaceCoinsEarned = RaceSessionContext.IsTraining
+            ? ComputeTrainingRaceCoins(_elapsedActiveDriving)
+            : 0;
         Time.timeScale = 0f;
 
         var uc = car.GetComponent<UserControl>();
@@ -174,7 +210,7 @@ public class RaceFlowManager : MonoBehaviour
             uc.enabled = false;
 
         ShowRaceOverUi();
-        RaceFinished?.Invoke(_elapsedActiveDriving, _finalScore);
+        RaceFinished?.Invoke(_elapsedActiveDriving, _finalScore, _trainingRaceCoinsEarned);
     }
 
     IEnumerator BeginRaceCountdown()
@@ -186,16 +222,21 @@ public class RaceFlowManager : MonoBehaviour
         _pendingDriftPoints = 0f;
         _accumulatedDriftScore = 0;
         _finalTimeScore = 0;
+        _trainingRaceCoinsEarned = 0;
         SetTimerText(FormatTime(0f));
         SetScoreText(0);
-        SetDriftGainText(false, 0);
+        SetDriftGainText(false, 0, false);
         ShowCountdownText(false, string.Empty);
 
         int countdown = Mathf.Max(0, startCountdownSeconds);
+        float soundDelay = Mathf.Max(0f, countdownSoundDelaySeconds);
         for (int value = countdown; value > 0; value--)
         {
+            StartCoroutine(PlayCountdownUiClipAfterDelay(countdownTickClip, soundDelay));
             yield return AnimateCountdownValue(value.ToString(), 1f);
         }
+
+        StartCoroutine(PlayCountdownUiClipAfterDelay(countdownStartClip, soundDelay));
         yield return AnimateCountdownValue("СТАРТ", 0.9f);
 
         ShowCountdownText(false, string.Empty);
@@ -248,6 +289,46 @@ public class RaceFlowManager : MonoBehaviour
         targetText.color = hiddenColor;
         targetText.rectTransform.localScale = Vector3.one;
         targetText.gameObject.SetActive(false);
+    }
+
+    IEnumerator PlayCountdownUiClipAfterDelay(AudioClip clip, float delay)
+    {
+        if (clip == null)
+            yield break;
+
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        PlayCountdownUiClip(clip);
+    }
+
+    void PlayCountdownUiClip(AudioClip clip)
+    {
+        if (clip == null)
+            return;
+
+        AudioSource src = GetOrCreateCountdownAudioSource();
+        if (src == null)
+            return;
+
+        src.mute = GlobalSoundManager.IsMuted;
+        src.PlayOneShot(clip, countdownSoundVolumeScale);
+    }
+
+    AudioSource GetOrCreateCountdownAudioSource()
+    {
+        if (countdownAudioSource != null)
+            return countdownAudioSource;
+
+        if (_runtimeCountdownAudioSource != null)
+            return _runtimeCountdownAudioSource;
+
+        _runtimeCountdownAudioSource = gameObject.AddComponent<AudioSource>();
+        _runtimeCountdownAudioSource.playOnAwake = false;
+        _runtimeCountdownAudioSource.loop = false;
+        _runtimeCountdownAudioSource.spatialBlend = 0f;
+        _runtimeCountdownAudioSource.volume = 1f;
+        return _runtimeCountdownAudioSource;
     }
 
     bool CanFinishRace()
@@ -303,7 +384,6 @@ public class RaceFlowManager : MonoBehaviour
         else if (_isInDrift)
         {
             CommitPendingDriftPoints();
-            SetDriftGainText(false, 0);
         }
 
         _isInDrift = isDriftingNow;
@@ -329,7 +409,7 @@ public class RaceFlowManager : MonoBehaviour
         if (pointsToAdd <= 0)
         {
             _pendingDriftPoints = 0f;
-            SetDriftGainText(false, 0);
+            SetDriftGainText(false, 0, false);
             return;
         }
 
@@ -343,6 +423,21 @@ public class RaceFlowManager : MonoBehaviour
     {
         float t = Mathf.Max(seconds, 0.05f);
         return Mathf.Max(minimumScore, Mathf.RoundToInt(scoreTimeDivisor / t));
+    }
+
+    int ComputeTrainingRaceCoins(float lapSeconds)
+    {
+        int minCoins = Mathf.Max(0, trainingCoinsMin);
+        int maxCoins = Mathf.Max(minCoins, trainingCoinsMax);
+        float fast = Mathf.Min(trainingCoinsFastLapSeconds, trainingCoinsSlowLapSeconds);
+        float slow = Mathf.Max(trainingCoinsFastLapSeconds, trainingCoinsSlowLapSeconds);
+        if (slow <= fast + 0.001f)
+            return maxCoins;
+
+        float clamped = Mathf.Clamp(lapSeconds, fast, slow);
+        float t = Mathf.InverseLerp(fast, slow, clamped);
+        int coins = Mathf.RoundToInt(Mathf.Lerp(maxCoins, minCoins, t));
+        return Mathf.Clamp(coins, minCoins, maxCoins);
     }
 
     static string FormatTime(float seconds)
@@ -366,15 +461,109 @@ public class RaceFlowManager : MonoBehaviour
             targetText.text = score.ToString();
     }
 
-    void SetDriftGainText(bool visible, int points)
+    void SetDriftGainText(bool visible, int points, bool animateHide = true)
     {
         if (driftGainText == null)
             return;
 
         bool shouldShow = visible && points >= MinDriftGainTextPoints;
-        driftGainText.gameObject.SetActive(shouldShow);
         if (shouldShow)
+        {
+            EnsureDriftGainInitialPose();
+            StopDriftGainHideAnimation();
+            var driftGainRect = driftGainText.rectTransform;
+            driftGainRect.localPosition = _driftGainInitialLocalPosition;
+            driftGainRect.localScale = _driftGainInitialScale;
+            driftGainText.gameObject.SetActive(true);
             driftGainText.text = $"+{Mathf.Max(0, points)}";
+            return;
+        }
+
+        HideDriftGainText(animateHide);
+    }
+
+    void HideDriftGainText(bool animate)
+    {
+        if (driftGainText == null)
+            return;
+
+        if (!driftGainText.gameObject.activeSelf || !animate)
+        {
+            StopDriftGainHideAnimation();
+            driftGainText.gameObject.SetActive(false);
+            return;
+        }
+
+        StopDriftGainHideAnimation();
+        _driftGainHideRoutine = StartCoroutine(AnimateDriftGainHide());
+    }
+
+    void StopDriftGainHideAnimation()
+    {
+        if (_driftGainHideRoutine == null)
+            return;
+
+        StopCoroutine(_driftGainHideRoutine);
+        _driftGainHideRoutine = null;
+    }
+
+    void EnsureDriftGainInitialPose()
+    {
+        if (_driftGainPoseCached || driftGainText == null)
+            return;
+
+        var driftGainRect = driftGainText.rectTransform;
+        _driftGainInitialLocalPosition = driftGainRect.localPosition;
+        _driftGainInitialScale = driftGainRect.localScale;
+        _driftGainPoseCached = true;
+    }
+
+    IEnumerator AnimateDriftGainHide()
+    {
+        if (driftGainText == null)
+            yield break;
+
+        EnsureDriftGainInitialPose();
+
+        var driftGainRect = driftGainText.rectTransform;
+        Vector3 startPosition = driftGainRect.localPosition;
+        Vector3 startScale = driftGainRect.localScale;
+        Vector3 endPosition = ResolveDriftGainFlyTargetPosition(driftGainRect);
+        float targetScaleMultiplier = Mathf.Clamp(driftGainFlyScaleMultiplier, 0.01f, 1f);
+        Vector3 endScale = _driftGainInitialScale * targetScaleMultiplier;
+        float duration = Mathf.Max(0.01f, driftGainFlyDuration);
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.Clamp01(elapsed / duration);
+            float eased = Mathf.SmoothStep(0f, 1f, progress);
+
+            driftGainRect.localPosition = Vector3.LerpUnclamped(startPosition, endPosition, eased);
+            driftGainRect.localScale = Vector3.LerpUnclamped(startScale, endScale, eased);
+            yield return null;
+        }
+
+        driftGainRect.localPosition = _driftGainInitialLocalPosition;
+        driftGainRect.localScale = _driftGainInitialScale;
+        driftGainText.gameObject.SetActive(false);
+        _driftGainHideRoutine = null;
+    }
+
+    Vector3 ResolveDriftGainFlyTargetPosition(RectTransform driftGainRect)
+    {
+        if (driftGainRect == null)
+            return _driftGainInitialLocalPosition;
+
+        var parentRect = driftGainRect.parent as RectTransform;
+        if (parentRect == null)
+            return _driftGainInitialLocalPosition + new Vector3(-220f, 220f, 0f);
+
+        float margin = Mathf.Max(0f, driftGainFlyCornerMargin);
+        float targetX = parentRect.rect.xMin + margin;
+        float targetY = parentRect.rect.yMax - margin;
+        return new Vector3(targetX, targetY, _driftGainInitialLocalPosition.z);
     }
 
     void UpdateSpeedText(CarController car)
@@ -499,7 +688,7 @@ public class RaceFlowManager : MonoBehaviour
             "score_drift",
             "score drift");
         if (driftScoreText != null)
-            driftScoreText.text = $"Drift: {_accumulatedDriftScore}";
+            driftScoreText.text = _accumulatedDriftScore.ToString();
 
         var timeBonusText = GetRaceOverText(
             raceOverTimeBonusText,
@@ -508,10 +697,19 @@ public class RaceFlowManager : MonoBehaviour
             "bonus",
             "score_time");
         if (timeBonusText != null)
-            timeBonusText.text = $"Time bonus: {_finalTimeScore}";
+            timeBonusText.text = _finalTimeScore.ToString();
 
         if (raceOverScoreText != null)
-            raceOverScoreText.text = $"Total: {_finalScore}";
+            raceOverScoreText.text = _finalScore.ToString();
+
+        var rcRewardText = GetRaceOverText(raceOverRaceCoinsText, "rc_reward", "racecoins", "rccoins", "coins_rc");
+        if (rcRewardText != null)
+        {
+            if (RaceSessionContext.IsTraining)
+                rcRewardText.text = $"+ {_trainingRaceCoinsEarned} RC";
+            else
+                rcRewardText.text = "";
+        }
 
         raceOverPanel.SetActive(true);
     }

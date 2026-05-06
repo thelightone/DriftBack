@@ -15,7 +15,7 @@ public class RaceResultSubmitter : MonoBehaviour
         RaceFlowManager.RaceFinished -= OnRaceFinished;
     }
 
-    private void OnRaceFinished(float timeSeconds, int score)
+    private void OnRaceFinished(float timeSeconds, int score, int raceCoinsEarned)
     {
         if (_submitted)
             return;
@@ -33,8 +33,16 @@ public class RaceResultSubmitter : MonoBehaviour
             return;
         }
 
+        if (RaceSessionContext.IsTraining &&
+            !string.IsNullOrWhiteSpace(RaceSessionContext.AccessToken) &&
+            !string.IsNullOrWhiteSpace(RaceSessionContext.BackendBaseUrl))
+        {
+            StartCoroutine(SubmitTrainingFinish(timeSeconds, raceCoinsEarned));
+            return;
+        }
+
         Debug.Log(
-            $"Race finished (no backend submit). Mode tournament={RaceSessionContext.IsTournament}, prepared={RaceSessionContext.BackendRacePrepared}. Score={score}, Time={timeSeconds}");
+            $"Race finished (no backend submit). Mode tournament={RaceSessionContext.IsTournament}, prepared={RaceSessionContext.BackendRacePrepared}. Score={score}, Time={timeSeconds}, TrainingRC={raceCoinsEarned}");
     }
 
     private IEnumerator SubmitTournamentFinish(int score)
@@ -65,5 +73,33 @@ public class RaceResultSubmitter : MonoBehaviour
         if (response != null)
             Debug.Log(
                 $"FinishSeasonRace ok. score={response.score}, bestScore={response.bestScore}, isNewBest={response.isNewBest}");
+    }
+
+    private IEnumerator SubmitTrainingFinish(float timeSeconds, int coinsEarned)
+    {
+        var api = new BackendApi(RaceSessionContext.BackendBaseUrl);
+        var body = new TrainingRaceFinishRequest
+        {
+            lapTimeSeconds = timeSeconds,
+            coinsEarned = Mathf.Max(0, coinsEarned)
+        };
+
+        TrainingRaceFinishResponse response = null;
+        string err = null;
+        yield return api.FinishTrainingRace(
+            RaceSessionContext.AccessToken,
+            body,
+            r => response = r,
+            e => err = e);
+
+        if (!string.IsNullOrEmpty(err))
+        {
+            Debug.LogError("FinishTrainingRace failed: " + err);
+            yield break;
+        }
+
+        if (response != null)
+            Debug.Log(
+                $"FinishTrainingRace ok. coinsGranted={response.coinsGranted}, raceCoinsBalance={response.raceCoinsBalance}");
     }
 }

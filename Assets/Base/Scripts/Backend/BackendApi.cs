@@ -66,6 +66,74 @@ public class BackendApi
         onSuccess?.Invoke(response);
     }
 
+    public IEnumerator UpdateProfileNick(
+        string accessToken,
+        UpdateNickRequest requestData,
+        Action<UpdateNickResponse> onSuccess,
+        Action<string> onError)
+    {
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            onError?.Invoke("UNAUTHORIZED");
+            yield break;
+        }
+
+        if (requestData == null || string.IsNullOrWhiteSpace(requestData.nick))
+        {
+            onError?.Invoke("INVALID_NICK");
+            yield break;
+        }
+
+        string json = JsonUtility.ToJson(requestData);
+        string url = _baseUrl + "/v1/profile/nick";
+
+        Debug.Log("=== UPDATE PROFILE NICK START ===");
+        Debug.Log("PUT " + url);
+        Debug.Log("UpdateProfileNick request json: " + json);
+
+        using var request = new UnityWebRequest(url, "PUT");
+        request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        string responseText = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+        Debug.Log("UpdateProfileNick response code: " + request.responseCode);
+        Debug.Log("UpdateProfileNick response text: " + responseText);
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            string errorCode = ResolveNickEndpointErrorCode(request.responseCode, responseText, request.error);
+            Debug.LogError("UpdateProfileNick request error: " + errorCode);
+            onError?.Invoke(errorCode);
+            yield break;
+        }
+
+        UpdateNickResponse response = null;
+
+        try
+        {
+            response = JsonUtility.FromJson<UpdateNickResponse>(responseText);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("UpdateProfileNick parse error: " + e.Message);
+            onError?.Invoke("UpdateProfileNick parse error: " + e.Message);
+            yield break;
+        }
+
+        if (response == null || string.IsNullOrWhiteSpace(response.nick))
+        {
+            onError?.Invoke("UpdateProfileNick response is invalid");
+            yield break;
+        }
+
+        Debug.Log("=== UPDATE PROFILE NICK END ===");
+        onSuccess?.Invoke(response);
+    }
+
     public IEnumerator GetGarage(
         string accessToken,
         System.Action<GarageResponse> onSuccess,
@@ -507,6 +575,68 @@ public class BackendApi
         onSuccess?.Invoke(response);
     }
 
+    /// <summary>
+    /// Завершение тренировочного заезда: время круга и начисленные RC (бекенд может пересчитать монеты).
+    /// POST /v1/training/finish
+    /// </summary>
+    public IEnumerator FinishTrainingRace(
+        string accessToken,
+        TrainingRaceFinishRequest requestData,
+        Action<TrainingRaceFinishResponse> onSuccess,
+        Action<string> onError)
+    {
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            onError?.Invoke("UNAUTHORIZED");
+            yield break;
+        }
+
+        string json = JsonUtility.ToJson(requestData);
+        string url = _baseUrl + "/v1/training/finish";
+
+        Debug.Log("=== TRAINING RACE FINISH START ===");
+        Debug.Log("POST " + url);
+        Debug.Log("FinishTrainingRace request json: " + json);
+
+        using var request = new UnityWebRequest(url, "POST");
+        request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        Debug.Log("FinishTrainingRace response code: " + request.responseCode);
+        Debug.Log("FinishTrainingRace response text: " + request.downloadHandler.text);
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
+            yield break;
+        }
+
+        TrainingRaceFinishResponse response = null;
+
+        try
+        {
+            response = JsonUtility.FromJson<TrainingRaceFinishResponse>(request.downloadHandler.text);
+        }
+        catch (Exception e)
+        {
+            onError?.Invoke("FinishTrainingRace parse error: " + e.Message);
+            yield break;
+        }
+
+        if (response == null)
+        {
+            onError?.Invoke("FinishTrainingRace response is null");
+            yield break;
+        }
+
+        Debug.Log("=== TRAINING RACE FINISH END ===");
+        onSuccess?.Invoke(response);
+    }
+
     public IEnumerator GetSeasonLeaderboard(
         string accessToken,
         string seasonId,
@@ -555,5 +685,56 @@ public class BackendApi
 
         Debug.Log("=== GET SEASON LEADERBOARD END ===");
         onSuccess?.Invoke(response);
+    }
+
+    private static string ResolveNickEndpointErrorCode(long statusCode, string responseText, string networkError)
+    {
+        string parsedCode = TryExtractApiErrorCode(responseText);
+        if (!string.IsNullOrWhiteSpace(parsedCode))
+            return parsedCode;
+
+        if (statusCode == 400)
+            return "INVALID_NICK";
+        if (statusCode == 401)
+            return "UNAUTHORIZED";
+        if (statusCode == 404)
+            return "NOT_FOUND";
+        if (statusCode == 409)
+            return "NICK_ALREADY_TAKEN";
+        if (statusCode == 422)
+            return "INSUFFICIENT_BALANCE";
+
+        if (!string.IsNullOrWhiteSpace(networkError))
+            return networkError;
+
+        return "UNKNOWN_ERROR";
+    }
+
+    private static string TryExtractApiErrorCode(string responseText)
+    {
+        if (string.IsNullOrWhiteSpace(responseText))
+            return string.Empty;
+
+        try
+        {
+            var direct = JsonUtility.FromJson<ApiErrorResponse>(responseText);
+            if (direct != null && !string.IsNullOrWhiteSpace(direct.code))
+                return direct.code.Trim();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            var envelope = JsonUtility.FromJson<ApiErrorEnvelope>(responseText);
+            if (envelope != null && envelope.error != null && !string.IsNullOrWhiteSpace(envelope.error.code))
+                return envelope.error.code.Trim();
+        }
+        catch
+        {
+        }
+
+        return string.Empty;
     }
 }

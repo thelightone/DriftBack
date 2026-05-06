@@ -14,6 +14,7 @@ public class LeaderboardEntryDto
 {
     public int rank;
     public string userId;
+    public string nick;
     public string username;
     public string firstName;
     public int bestScore;

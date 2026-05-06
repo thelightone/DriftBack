@@ -5,6 +5,7 @@ public class TelegramProfile
 {
     public string userId;
     public string telegramUserId;
+    public string nick;
     public string firstName;
     public string username;
     public string[] ownedCarIds;

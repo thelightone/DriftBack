@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 
 public class AppManager : MonoBehaviour
@@ -37,7 +38,11 @@ public class AppManager : MonoBehaviour
     private string _mainPanelTournamentPlaceDisplay = "—";
     private string _tournamentPanelRatingPlaceDisplay = "—";
     private string _tournamentPanelFirstPlaceScoreDisplay = "—";
+    private string _tournamentPanelDateRangeDisplay = "—";
     private int _activeSeasonEntryFee = 0;
+
+    private bool _showServerNickOnNickButton;
+    private INickChangeUi _nickChangeUi;
 
     private void Awake()
     {
@@ -98,6 +103,7 @@ public class AppManager : MonoBehaviour
         var cached = LocalProfileCache.Load();
 
         _state.PlayerId = cached.playerId;
+        _state.PlayerNick = string.Empty;
         _state.OwnedCarIds = cached.ownedCarIds ?? Array.Empty<string>();
         _state.IsPremium = false;
         _state.TrainingPoints = cached.trainingPoints;
@@ -146,7 +152,7 @@ public class AppManager : MonoBehaviour
         {
             view.ShowProfile(
                 _state.IsAuthorized,
-                _state.PlayerId,
+                ResolveMainProfileDisplayName(),
                 _state.OwnedCarIds,
                 _state.IsPremium,
                 _state.TrainingPoints,
@@ -159,6 +165,38 @@ public class AppManager : MonoBehaviour
                 GetSelectedCarIcon()
             );
         }
+
+        _nickChangeUi?.RefreshButtonLabel();
+    }
+
+    public void RegisterNickChangeUi(INickChangeUi ui)
+    {
+        _nickChangeUi = ui;
+    }
+
+    public string GetNickButtonLabelText()
+    {
+        if (_showServerNickOnNickButton && !string.IsNullOrWhiteSpace(_state.PlayerNick))
+            return _state.PlayerNick.Trim();
+        return FormatTelegramUsernameForButton(_state.TelegramUser);
+    }
+
+    public string GetNickForEditField()
+    {
+        return string.IsNullOrWhiteSpace(_state.PlayerNick) ? string.Empty : _state.PlayerNick.Trim();
+    }
+
+    private static string FormatTelegramUsernameForButton(TelegramUserData u)
+    {
+        if (u == null)
+            return "Ник";
+        if (!string.IsNullOrWhiteSpace(u.username))
+            return "@" + u.username.Trim();
+        if (!string.IsNullOrWhiteSpace(u.first_name))
+            return u.first_name.Trim();
+        if (u.id > 0)
+            return "id " + u.id;
+        return "Ник";
     }
 
     private Sprite GetSelectedCarIcon()
@@ -168,6 +206,14 @@ public class AppManager : MonoBehaviour
 
         var def = garageCatalog.GetById(_state.SelectedCarId);
         return def != null ? def.icon : null;
+    }
+
+    private string ResolveMainProfileDisplayName()
+    {
+        if (!string.IsNullOrWhiteSpace(_state.PlayerNick))
+            return _state.PlayerNick;
+
+        return _state.PlayerId;
     }
 
     private void RebuildPanels()
@@ -225,7 +271,8 @@ public class AppManager : MonoBehaviour
             _state.IsPremium,
             _tournamentHighScoreDisplay,
             _tournamentPanelRatingPlaceDisplay,
-            _tournamentPanelFirstPlaceScoreDisplay
+            _tournamentPanelFirstPlaceScoreDisplay,
+            _tournamentPanelDateRangeDisplay
         );
     }
 
@@ -235,6 +282,52 @@ public class AppManager : MonoBehaviour
         _mainPanelTournamentPlaceDisplay = "—";
         _tournamentPanelRatingPlaceDisplay = "—";
         _tournamentPanelFirstPlaceScoreDisplay = "—";
+        _tournamentPanelDateRangeDisplay = "—";
+    }
+
+    private static string FormatTournamentDateRange(string startsAt, string endsAt)
+    {
+        string start = FormatSingleSeasonDate(startsAt);
+        string end = FormatSingleSeasonDate(endsAt);
+
+        if (start == "—" && end == "—")
+            return "—";
+        if (start == "—")
+            return end;
+        if (end == "—")
+            return start;
+        return start + "-" + end;
+    }
+
+    private static string FormatSingleSeasonDate(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "—";
+
+        value = value.Trim();
+
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dt))
+            return dt.ToString("dd.MM", CultureInfo.InvariantCulture);
+
+        if (DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out dt))
+            return dt.ToString("dd.MM", CultureInfo.CurrentCulture);
+
+        return value;
+    }
+
+    private static string ResolveNickFromProfile(TelegramProfile profile)
+    {
+        if (profile == null)
+            return string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(profile.nick))
+            return profile.nick.Trim();
+        if (!string.IsNullOrWhiteSpace(profile.username))
+            return profile.username.Trim();
+        if (!string.IsNullOrWhiteSpace(profile.firstName))
+            return profile.firstName.Trim();
+
+        return string.Empty;
     }
 
     private void ApplyLeaderboardResponseToRatingUi(LeaderboardResponse response, string leaderboardErr)
@@ -313,6 +406,7 @@ public class AppManager : MonoBehaviour
 
         _mainPanelTournamentRecordDisplay = detail.entered ? detail.bestScore.ToString() : "—";
         _mainPanelTournamentPlaceDisplay = "—";
+        _tournamentPanelDateRangeDisplay = FormatTournamentDateRange(detail.startsAt, detail.endsAt);
 
         LeaderboardResponse leaderboardResponse = null;
         string leaderboardErr = null;
@@ -352,6 +446,7 @@ public class AppManager : MonoBehaviour
         if (response.profile != null)
         {
             _state.PlayerId = response.profile.userId;
+            _state.PlayerNick = ResolveNickFromProfile(response.profile);
             _state.OwnedCarIds = response.profile.ownedCarIds ?? Array.Empty<string>();
             _state.GarageRevision = response.profile.garageRevision;
             _state.SoftCurrency = response.profile.raceCoinsBalance;
@@ -362,6 +457,7 @@ public class AppManager : MonoBehaviour
         Debug.Log("=== AUTH RESPONSE APPLIED ===");
         Debug.Log("IsAuthorized: " + _state.IsAuthorized);
         Debug.Log("PlayerId: " + _state.PlayerId);
+        Debug.Log("PlayerNick: " + _state.PlayerNick);
         Debug.Log("AccessToken: " + _state.AccessToken);
         Debug.Log("GarageRevision: " + _state.GarageRevision);
         Debug.Log("RaceCoinsBalance after auth: " + _state.SoftCurrency);
@@ -403,6 +499,11 @@ public class AppManager : MonoBehaviour
     public void OnRefreshButtonClicked()
     {
         StartCoroutine(RefreshFlow());
+    }
+
+    public void OnChangeNickRequested(string newNick, Action onSuccess = null, Action<string> onError = null)
+    {
+        StartCoroutine(ChangeNickFlow(newNick, onSuccess, onError));
     }
 
     public void OnOpenGarageClicked()
@@ -482,6 +583,108 @@ public class AppManager : MonoBehaviour
             view.ShowMainPanel();
     }
 
+    private static bool IsNickValid(string nick)
+    {
+        if (string.IsNullOrWhiteSpace(nick))
+            return false;
+
+        string trimmed = nick.Trim();
+        if (trimmed.Length < 3 || trimmed.Length > 20)
+            return false;
+
+        for (int i = 0; i < trimmed.Length; i++)
+        {
+            char c = trimmed[i];
+            if (!(char.IsLetterOrDigit(c) || c == '_'))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static string BuildNickErrorMessage(string errorCode)
+    {
+        switch (errorCode)
+        {
+            case "INVALID_NICK":
+                return "Nick must be 3-20 chars, letters/digits/underscore only.";
+            case "NICK_ALREADY_TAKEN":
+                return "This nick is already taken.";
+            case "INSUFFICIENT_BALANCE":
+                return "Not enough race coins for nick change.";
+            case "UNAUTHORIZED":
+                return "Authorize first (init).";
+            case "NOT_FOUND":
+                return "Player profile not found.";
+            default:
+                return "Nick update failed: " + errorCode;
+        }
+    }
+
+    private IEnumerator ChangeNickFlow(string rawNick, Action onSuccess, Action<string> onError)
+    {
+        if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
+        {
+            const string msg = "Authorize first (init)";
+            if (view != null)
+                view.ShowStatus(msg);
+            onError?.Invoke(msg);
+            yield break;
+        }
+
+        string nextNick = (rawNick ?? string.Empty).Trim();
+        if (!IsNickValid(nextNick))
+        {
+            const string msg = "Nick must be 3-20 chars, letters/digits/underscore only.";
+            if (view != null)
+                view.ShowStatus(msg);
+            onError?.Invoke(msg);
+            yield break;
+        }
+
+        if (string.Equals(_state.PlayerNick, nextNick, StringComparison.Ordinal))
+        {
+            const string msg = "Nick is already set.";
+            if (view != null)
+                view.ShowStatus(msg);
+            onError?.Invoke(msg);
+            yield break;
+        }
+
+        if (view != null)
+            view.ShowStatus("Updating nick...");
+
+        UpdateNickResponse response = null;
+        string error = null;
+        yield return _backendApi.UpdateProfileNick(
+            _state.AccessToken,
+            new UpdateNickRequest { nick = nextNick },
+            r => response = r,
+            e => error = e);
+
+        if (!string.IsNullOrEmpty(error) || response == null)
+        {
+            string message = BuildNickErrorMessage(error ?? "failed");
+            if (view != null)
+                view.ShowStatus(message);
+            onError?.Invoke(message);
+            yield break;
+        }
+
+        _state.PlayerNick = response.nick;
+        _state.SoftCurrency = response.raceCoinsBalance;
+        _showServerNickOnNickButton = true;
+
+        SaveProfileCache();
+        RebuildPanels();
+        RefreshAllViews();
+
+        onSuccess?.Invoke();
+
+        if (view != null)
+            view.ShowStatus($"Nick updated to {response.nick}");
+    }
+
     public void OnBuyTournamentAccessClicked()
     {
         if (!_state.IsAuthorized || string.IsNullOrWhiteSpace(_state.AccessToken))
@@ -526,6 +729,9 @@ public class AppManager : MonoBehaviour
             _state.TelegramUser != null ? _state.TelegramUser.id : 0,
             backendBaseUrl
         );
+
+        if (_state.IsAuthorized && !string.IsNullOrWhiteSpace(_state.AccessToken))
+            RaceSessionContext.AccessToken = _state.AccessToken;
 
         sceneLoader.StartTrainingGame();
     }
@@ -627,6 +833,7 @@ public class AppManager : MonoBehaviour
         _tournamentHighScoreDisplay = "…";
         _tournamentPanelRatingPlaceDisplay = "…";
         _tournamentPanelFirstPlaceScoreDisplay = "…";
+        _tournamentPanelDateRangeDisplay = "…";
         RebuildTournamentPanel();
 
         string seasonId = null;
@@ -668,6 +875,7 @@ public class AppManager : MonoBehaviour
         _tournamentHighScoreDisplay = detail.entered ? detail.bestScore.ToString() : "—";
         _mainPanelTournamentRecordDisplay = _tournamentHighScoreDisplay;
         _mainPanelTournamentPlaceDisplay = "—";
+        _tournamentPanelDateRangeDisplay = FormatTournamentDateRange(detail.startsAt, detail.endsAt);
 
         LeaderboardResponse leaderboardResponse = null;
         string leaderboardErr = null;
@@ -969,6 +1177,7 @@ public class AppManager : MonoBehaviour
                 if (response.profile != null)
                 {
                     Debug.Log("Profile.userId: " + response.profile.userId);
+                    Debug.Log("Profile.nick: " + response.profile.nick);
                     Debug.Log("Profile.ownedCarIds: " + (response.profile.ownedCarIds != null
                         ? string.Join(",", response.profile.ownedCarIds)
                         : "NULL"));

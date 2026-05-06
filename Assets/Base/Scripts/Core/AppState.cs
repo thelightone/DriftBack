@@ -11,6 +11,7 @@ public class AppState
     public bool IsAuthorized;
 
     public string PlayerId;
+    public string PlayerNick;
     public string[] OwnedCarIds;
     public bool IsPremium;
 
