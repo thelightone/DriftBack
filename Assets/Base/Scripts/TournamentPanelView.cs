@@ -20,6 +20,9 @@ public class TournamentPanelView : MonoBehaviour
     [Tooltip("Очки лидера рейтинга (1-е место).")]
     public TMP_Text firstPlaceScoreText;
 
+    [Tooltip("Период турнира: «дд.мм-дд.мм» (строка уже собрана).")]
+    public TMP_Text tournamentDatesText;
+
     private string _primaryBalanceLine;
 
     [Header("Buttons")]
@@ -35,7 +38,8 @@ public class TournamentPanelView : MonoBehaviour
         bool isPremium,
         string tournamentHighScoreDisplay,
         string ratingPlaceDisplay,
-        string firstPlaceScoreDisplay
+        string firstPlaceScoreDisplay,
+        string tournamentDatesRangeDisplay
     )
     {
         _primaryBalanceLine = softCurrency + " RC";
@@ -61,6 +65,9 @@ public class TournamentPanelView : MonoBehaviour
 
         if (firstPlaceScoreText != null)
             firstPlaceScoreText.text = string.IsNullOrWhiteSpace(firstPlaceScoreDisplay) ? "—" : firstPlaceScoreDisplay;
+
+        if (tournamentDatesText != null)
+            tournamentDatesText.text = string.IsNullOrWhiteSpace(tournamentDatesRangeDisplay) ? "—" : tournamentDatesRangeDisplay;
 
         if (buyAccessButton != null)
             buyAccessButton.gameObject.SetActive(!isPremium);

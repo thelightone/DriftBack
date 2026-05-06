@@ -10,6 +10,8 @@ using UnityEditor.SceneManagement;
 
 public class SceneLoader : MonoBehaviour
 {
+    private const float AsyncSceneLoadProgressMax = 0.9f;
+
     private static string s_lastLoadedRaceSceneAddress;
     private static bool s_isAddressableLoadInProgress;
 
@@ -17,6 +19,20 @@ public class SceneLoader : MonoBehaviour
     [SerializeField] private string menuSceneName = "Demo";
     [SerializeField] private string backendBaseUrl = "https://your-backend-url.com";
     [SerializeField] private SceneTransitionLoader sceneTransitionLoader;
+    [SerializeField] private bool preloadRaceSceneOnStart = true;
+
+    private AsyncOperation _preloadedRaceSceneOperation;
+    private AsyncOperationHandle<SceneInstance> _preloadedRaceSceneAddressableHandle;
+    private bool _hasPreloadedRaceSceneAddressableHandle;
+    private string _preloadedRaceSceneReference;
+
+    private void Start()
+    {
+        if (!preloadRaceSceneOnStart)
+            return;
+
+        TryPreloadRaceSceneInBackground();
+    }
 
     public void StartTrainingGame()
     {
@@ -87,12 +103,147 @@ public class SceneLoader : MonoBehaviour
 
     private void LoadRaceScene()
     {
+        if (TryActivatePreloadedRaceScene())
+            return;
+
         LoadAddressableScene(
             raceSceneName,
             "Race scene name is empty",
             cacheAsRaceScene: true,
             sceneTransitionLoader
         );
+    }
+
+    private void TryPreloadRaceSceneInBackground()
+    {
+        string normalizedSceneReference = NormalizeSceneReference(raceSceneName);
+        if (string.IsNullOrWhiteSpace(normalizedSceneReference))
+            return;
+
+        if (_preloadedRaceSceneOperation != null || _hasPreloadedRaceSceneAddressableHandle)
+            return;
+
+        if (string.Equals(SceneManager.GetActiveScene().path, normalizedSceneReference, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        int buildIndex = SceneUtility.GetBuildIndexByScenePath(normalizedSceneReference);
+        if (buildIndex >= 0)
+        {
+            StartCoroutine(PreloadRaceSceneRoutine(buildIndex, normalizedSceneReference));
+            return;
+        }
+
+        StartCoroutine(PreloadRaceSceneAddressableRoutine(normalizedSceneReference));
+    }
+
+    private System.Collections.IEnumerator PreloadRaceSceneRoutine(int buildIndex, string normalizedSceneReference)
+    {
+        AsyncOperation preloadOperation = SceneManager.LoadSceneAsync(buildIndex, LoadSceneMode.Single);
+        if (preloadOperation == null)
+        {
+            Debug.LogWarning(
+                $"Background preload failed. Could not create async operation for '{normalizedSceneReference}'.");
+            _preloadedRaceSceneReference = null;
+            yield break;
+        }
+
+        _preloadedRaceSceneOperation = preloadOperation;
+        _preloadedRaceSceneReference = normalizedSceneReference;
+        preloadOperation.allowSceneActivation = false;
+
+        while (!preloadOperation.isDone && preloadOperation.progress < AsyncSceneLoadProgressMax)
+        {
+            yield return null;
+        }
+
+        if (_preloadedRaceSceneOperation == preloadOperation)
+            Debug.Log($"Race scene preloaded in background: {_preloadedRaceSceneReference}");
+    }
+
+    private bool TryActivatePreloadedRaceScene()
+    {
+        if (_preloadedRaceSceneOperation == null)
+        {
+            if (!_hasPreloadedRaceSceneAddressableHandle)
+                return false;
+
+            string normalizedAddressableSceneReference = NormalizeSceneReference(raceSceneName);
+            if (!string.Equals(_preloadedRaceSceneReference, normalizedAddressableSceneReference, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            Time.timeScale = 1f;
+            AsyncOperationHandle<SceneInstance> preloadedHandle = _preloadedRaceSceneAddressableHandle;
+            _hasPreloadedRaceSceneAddressableHandle = false;
+            _preloadedRaceSceneReference = null;
+            StartCoroutine(ActivatePreloadedAddressableSceneRoutine(preloadedHandle, normalizedAddressableSceneReference));
+            Debug.Log($"Activating preloaded race scene via Addressables: {normalizedAddressableSceneReference}");
+            return true;
+        }
+
+        string normalizedRaceSceneReference = NormalizeSceneReference(raceSceneName);
+        if (!string.Equals(_preloadedRaceSceneReference, normalizedRaceSceneReference, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        Time.timeScale = 1f;
+        _preloadedRaceSceneOperation.allowSceneActivation = true;
+        Debug.Log($"Activating preloaded race scene: {_preloadedRaceSceneReference}");
+        _preloadedRaceSceneOperation = null;
+        _preloadedRaceSceneReference = null;
+        return true;
+    }
+
+    private System.Collections.IEnumerator PreloadRaceSceneAddressableRoutine(string normalizedSceneReference)
+    {
+        AsyncOperationHandle<SceneInstance> preloadHandle =
+            Addressables.LoadSceneAsync(normalizedSceneReference, LoadSceneMode.Single, activateOnLoad: false);
+
+        _preloadedRaceSceneAddressableHandle = preloadHandle;
+        _hasPreloadedRaceSceneAddressableHandle = true;
+        _preloadedRaceSceneReference = normalizedSceneReference;
+
+        while (!preloadHandle.IsDone)
+            yield return null;
+
+        if (!_hasPreloadedRaceSceneAddressableHandle || !_preloadedRaceSceneAddressableHandle.Equals(preloadHandle))
+            yield break;
+
+        if (preloadHandle.Status == AsyncOperationStatus.Succeeded)
+        {
+            Debug.Log($"Race scene preloaded in background via Addressables: {_preloadedRaceSceneReference}");
+            yield break;
+        }
+
+        _hasPreloadedRaceSceneAddressableHandle = false;
+        _preloadedRaceSceneReference = null;
+        Addressables.Release(preloadHandle);
+
+        Debug.LogWarning(
+            $"Addressables background preload failed for scene '{normalizedSceneReference}'. " +
+            "The scene will be loaded on demand.");
+    }
+
+    private System.Collections.IEnumerator ActivatePreloadedAddressableSceneRoutine(
+        AsyncOperationHandle<SceneInstance> preloadHandle,
+        string normalizedSceneReference)
+    {
+        while (!preloadHandle.IsDone)
+            yield return null;
+
+        if (preloadHandle.Status != AsyncOperationStatus.Succeeded)
+        {
+            Addressables.Release(preloadHandle);
+            LoadAddressableScene(
+                normalizedSceneReference,
+                "Race scene name is empty",
+                cacheAsRaceScene: true,
+                sceneTransitionLoader
+            );
+            yield break;
+        }
+
+        AsyncOperation activateOperation = preloadHandle.Result.ActivateAsync();
+        while (activateOperation != null && !activateOperation.isDone)
+            yield return null;
     }
 
     private static void LoadRegularScene(

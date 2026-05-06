@@ -1837,17 +1837,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RaceFlowManager
   startCountdownSeconds: 3
+  minSpeedToCountTime: 0
   scoreTimeDivisor: 10000
   minimumScore: 50
-  minSpeedToCountTime: 0
+  driftPointsPerSecond: 40
+  minDriftSpeedKmh: 20
+  minDriftSlip: 0.35
+  minDriftAngle: 12
+  driftGainFlyDuration: 0.35
+  driftGainFlyCornerMargin: 40
+  driftGainFlyScaleMultiplier: 0.35
   requiredDistanceFromFinish: 0
   finishReferencePoint: {fileID: 0}
+  countdownScaleFrom: 0.75
+  countdownScaleTo: 1.35
+  countdownFadeOutStart: 0.25
   timerText: {fileID: 3908357272717580053}
   countdownText: {fileID: 5613988692457250425}
   speedText: {fileID: 7849768081703990740}
+  speedTextSmoothing: 10
+  scoreText: {fileID: 0}
+  driftGainText: {fileID: 0}
   raceOverPanel: {fileID: 5816684188230438692}
   raceOverTitleText: {fileID: 5655101646100102233}
   raceOverTimeText: {fileID: 4432411425609386819}
+  raceOverDriftScoreText: {fileID: 0}
+  raceOverTimeBonusText: {fileID: 0}
   raceOverScoreText: {fileID: 6825919826248667529}
 --- !u!114 &3678960413204940236
 MonoBehaviour:
@@ -2962,10 +2977,10 @@ PrefabInstance:
       addedObject: {fileID: 8394425233027755239}
     - targetCorrespondingSourceObject: {fileID: 8671914901424507201, guid: 80f5b76b30e762441a5033b486c5db19, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7580778870301526544}
+      addedObject: {fileID: 7220800184399378570}
     - targetCorrespondingSourceObject: {fileID: 8671914901424507201, guid: 80f5b76b30e762441a5033b486c5db19, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7220800184399378570}
+      addedObject: {fileID: 7580778870301526544}
     - targetCorrespondingSourceObject: {fileID: 8671914901424507201, guid: 80f5b76b30e762441a5033b486c5db19, type: 3}
       insertIndex: -1
       addedObject: {fileID: 9012081992618284719}

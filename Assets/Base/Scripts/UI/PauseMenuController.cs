@@ -17,9 +17,12 @@ public sealed class PauseMenuController : MonoBehaviour
     [SerializeField] private Button continueButton;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button homeButton;
+    [SerializeField] private Button soundOffButton;
+    [SerializeField] private Button soundOnButton;
     [SerializeField] private SceneTransitionLoader sceneTransitionLoader;
 
     public static bool IsPaused { get; private set; }
+    public static bool IsSoundMuted => GlobalSoundManager.IsMuted;
     public static bool IsPauseMenuVisible =>
         _instance != null && _instance.pausePanel != null && _instance.pausePanel.activeInHierarchy;
 
@@ -98,6 +101,16 @@ public sealed class PauseMenuController : MonoBehaviour
         SceneLoader.LoadScene(targetScene, sceneTransitionLoader);
     }
 
+    public void DisableSound()
+    {
+        GlobalSoundManager.MuteAll();
+    }
+
+    public void EnableSound()
+    {
+        GlobalSoundManager.UnmuteAll();
+    }
+
     void SetPaused(bool paused)
     {
         IsPaused = paused;
@@ -113,6 +126,8 @@ public sealed class PauseMenuController : MonoBehaviour
         AddButtonListener(continueButton, ResumeGame);
         AddButtonListener(restartButton, RestartRace);
         AddButtonListener(homeButton, GoHome);
+        AddButtonListener(soundOffButton, DisableSound);
+        AddButtonListener(soundOnButton, EnableSound);
     }
 
     void UnbindButtons()
@@ -121,6 +136,8 @@ public sealed class PauseMenuController : MonoBehaviour
         RemoveButtonListener(continueButton, ResumeGame);
         RemoveButtonListener(restartButton, RestartRace);
         RemoveButtonListener(homeButton, GoHome);
+        RemoveButtonListener(soundOffButton, DisableSound);
+        RemoveButtonListener(soundOnButton, EnableSound);
     }
 
     static void AddButtonListener(Button button, UnityEngine.Events.UnityAction action)

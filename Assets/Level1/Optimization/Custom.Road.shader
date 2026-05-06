@@ -9,6 +9,8 @@ Shader "Custom.Road"
 		_BaseMap("BaseMap", 2D) = "white" {}
 		_Smoothness("Smoothness", Range( 0 , 1)) = 0
 		_LineWidth("LineWidth", Float) = 0
+		_LineColor("Line Color", Color) = (1,1,1,1)
+		_LineEmissionStrength("Line Emission Strength", Range(0, 10)) = 0
 		_SpecColor("SpecColor", Color) = (1,1,1,1)
 		_BumpStrength("BumpStrength", Float) = 0
 		_Offset("Offset", Float) = 0
@@ -316,6 +318,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION
@@ -587,9 +591,11 @@ Shader "Custom.Road"
 				unpack29.z = lerp( 1, unpack29.z, saturate(_BumpStrength) );
 				
 
-				float3 BaseColor = ( ( tex2D( _BaseMap, (temp_output_34_0*(_BaseMap_ST).xy + (_BaseMap_ST).zw) ) * _BaseColor ) + localMyCustomExpression36 ).rgb;
+				float lineMask = saturate( localMyCustomExpression36 );
+				float3 lineColor = _LineColor.rgb * lineMask;
+				float3 BaseColor = ( tex2D( _BaseMap, (temp_output_34_0*(_BaseMap_ST).xy + (_BaseMap_ST).zw) ) * _BaseColor ).rgb + lineColor;
 				float3 Normal = unpack29;
-				float3 Emission = 0;
+				float3 Emission = lineColor * _LineEmissionStrength;
 				float3 Specular = _SpecColor.rgb;
 				float Metallic = 0;
 				float Smoothness = _Smoothness;
@@ -935,6 +941,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION
@@ -1244,6 +1252,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION
@@ -1748,8 +1758,10 @@ Shader "Custom.Road"
 				float localMyCustomExpression36 = MyCustomExpression36( uv36 , lineWidth36 , offset36 );
 				
 
-				float3 BaseColor = ( ( tex2D( _BaseMap, (temp_output_34_0*(_BaseMap_ST).xy + (_BaseMap_ST).zw) ) * _BaseColor ) + localMyCustomExpression36 ).rgb;
-				float3 Emission = 0;
+				float lineMask = saturate( localMyCustomExpression36 );
+				float3 lineColor = _LineColor.rgb * lineMask;
+				float3 BaseColor = ( tex2D( _BaseMap, (temp_output_34_0*(_BaseMap_ST).xy + (_BaseMap_ST).zw) ) * _BaseColor ).rgb + lineColor;
+				float3 Emission = lineColor * _LineEmissionStrength;
 				float Alpha = 1;
 				float AlphaClipThreshold = 0.5;
 
@@ -1848,6 +1860,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION
@@ -2051,7 +2065,9 @@ Shader "Custom.Road"
 				float localMyCustomExpression36 = MyCustomExpression36( uv36 , lineWidth36 , offset36 );
 				
 
-				float3 BaseColor = ( ( tex2D( _BaseMap, (temp_output_34_0*(_BaseMap_ST).xy + (_BaseMap_ST).zw) ) * _BaseColor ) + localMyCustomExpression36 ).rgb;
+				float lineMask = saturate( localMyCustomExpression36 );
+				float3 lineColor = _LineColor.rgb * lineMask;
+				float3 BaseColor = ( tex2D( _BaseMap, (temp_output_34_0*(_BaseMap_ST).xy + (_BaseMap_ST).zw) ) * _BaseColor ).rgb + lineColor;
 				float Alpha = 1;
 				float AlphaClipThreshold = 0.5;
 
@@ -2162,6 +2178,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION
@@ -2543,6 +2561,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION
@@ -2814,9 +2834,11 @@ Shader "Custom.Road"
 				unpack29.z = lerp( 1, unpack29.z, saturate(_BumpStrength) );
 				
 
-				float3 BaseColor = ( ( tex2D( _BaseMap, (temp_output_34_0*(_BaseMap_ST).xy + (_BaseMap_ST).zw) ) * _BaseColor ) + localMyCustomExpression36 ).rgb;
+				float lineMask = saturate( localMyCustomExpression36 );
+				float3 lineColor = _LineColor.rgb * lineMask;
+				float3 BaseColor = ( tex2D( _BaseMap, (temp_output_34_0*(_BaseMap_ST).xy + (_BaseMap_ST).zw) ) * _BaseColor ).rgb + lineColor;
 				float3 Normal = unpack29;
-				float3 Emission = 0;
+				float3 Emission = lineColor * _LineEmissionStrength;
 				float3 Specular = _SpecColor.rgb;
 				float Metallic = 0;
 				float Smoothness = _Smoothness;
@@ -3012,6 +3034,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION
@@ -3268,6 +3292,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION
@@ -3534,6 +3560,8 @@ Shader "Custom.Road"
 			float4 _SpecColor;
 			float _Offset;
 			float _LineWidth;
+			float4 _LineColor;
+			float _LineEmissionStrength;
 			float _BumpStrength;
 			float _Smoothness;
 			#ifdef ASE_TRANSMISSION

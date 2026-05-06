@@ -87,7 +87,6 @@ public static class RaceSessionContext
 
     static void ClearBackendTournamentState()
     {
-        AccessToken = "";
         SeasonId = "";
         RaceId = "";
         Seed = "";

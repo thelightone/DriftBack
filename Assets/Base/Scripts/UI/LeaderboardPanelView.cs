@@ -117,6 +117,9 @@ public class LeaderboardPanelView : MonoBehaviour
         if (e == null)
             return "—";
 
+        if (!string.IsNullOrWhiteSpace(e.nick))
+            return e.nick.Trim();
+
         if (!string.IsNullOrWhiteSpace(e.username))
             return "@" + e.username.Trim();
 
