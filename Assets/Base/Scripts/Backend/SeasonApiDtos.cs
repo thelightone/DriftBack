@@ -68,3 +68,24 @@ public class SeasonRaceFinishResponse
     public bool isNewBest;
     public int bestScore;
 }
+
+[Serializable]
+public class TrainingRaceFinishRequest
+{
+    public string raceId;
+    public string seed;
+    public int score;
+    public float timeSeconds;
+    public int raceCoinsEarned;
+}
+
+[Serializable]
+public class TrainingRaceFinishResponse
+{
+    public string raceId;
+    public int score;
+    public bool isNewBest;
+    public int bestScore;
+    public int raceCoinsEarned;
+    public int raceCoinsBalance;
+}

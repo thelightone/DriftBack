@@ -21,6 +21,9 @@ public class RaceResultSubmitter : MonoBehaviour
             return;
 
         _submitted = true;
+        int safeScore = Mathf.Max(0, score);
+        float safeTimeSeconds = Mathf.Max(0f, timeSeconds);
+        int safeRaceCoinsEarned = Mathf.Clamp(raceCoinsEarned, 1, 20);
 
         if (RaceSessionContext.IsTournament && RaceSessionContext.BackendRacePrepared &&
             !string.IsNullOrWhiteSpace(RaceSessionContext.AccessToken) &&
@@ -28,21 +31,22 @@ public class RaceResultSubmitter : MonoBehaviour
             !string.IsNullOrWhiteSpace(RaceSessionContext.RaceId) &&
             !string.IsNullOrWhiteSpace(RaceSessionContext.Seed))
         {
-            int safeScore = Mathf.Max(0, score);
             StartCoroutine(SubmitTournamentFinish(safeScore));
             return;
         }
 
-        if (RaceSessionContext.IsTraining &&
+        if (RaceSessionContext.IsTraining && RaceSessionContext.BackendRacePrepared &&
             !string.IsNullOrWhiteSpace(RaceSessionContext.AccessToken) &&
-            !string.IsNullOrWhiteSpace(RaceSessionContext.BackendBaseUrl))
+            !string.IsNullOrWhiteSpace(RaceSessionContext.SeasonId) &&
+            !string.IsNullOrWhiteSpace(RaceSessionContext.RaceId) &&
+            !string.IsNullOrWhiteSpace(RaceSessionContext.Seed))
         {
-            StartCoroutine(SubmitTrainingFinish(timeSeconds, raceCoinsEarned));
+            StartCoroutine(SubmitTrainingFinish(safeTimeSeconds, safeScore, safeRaceCoinsEarned));
             return;
         }
 
         Debug.Log(
-            $"Race finished (no backend submit). Mode tournament={RaceSessionContext.IsTournament}, prepared={RaceSessionContext.BackendRacePrepared}. Score={score}, Time={timeSeconds}, TrainingRC={raceCoinsEarned}");
+            $"Race finished (no backend submit). Mode training={RaceSessionContext.IsTraining}, tournament={RaceSessionContext.IsTournament}, prepared={RaceSessionContext.BackendRacePrepared}. Score={score}, Time={timeSeconds}, RaceCoins={raceCoinsEarned}");
     }
 
     private IEnumerator SubmitTournamentFinish(int score)
@@ -75,19 +79,23 @@ public class RaceResultSubmitter : MonoBehaviour
                 $"FinishSeasonRace ok. score={response.score}, bestScore={response.bestScore}, isNewBest={response.isNewBest}");
     }
 
-    private IEnumerator SubmitTrainingFinish(float timeSeconds, int coinsEarned)
+    private IEnumerator SubmitTrainingFinish(float timeSeconds, int score, int raceCoinsEarned)
     {
         var api = new BackendApi(RaceSessionContext.BackendBaseUrl);
         var body = new TrainingRaceFinishRequest
         {
-            lapTimeSeconds = timeSeconds,
-            coinsEarned = Mathf.Max(0, coinsEarned)
+            raceId = RaceSessionContext.RaceId,
+            seed = RaceSessionContext.Seed,
+            score = score,
+            timeSeconds = timeSeconds,
+            raceCoinsEarned = raceCoinsEarned
         };
 
         TrainingRaceFinishResponse response = null;
         string err = null;
         yield return api.FinishTrainingRace(
             RaceSessionContext.AccessToken,
+            RaceSessionContext.SeasonId,
             body,
             r => response = r,
             e => err = e);
@@ -100,6 +108,6 @@ public class RaceResultSubmitter : MonoBehaviour
 
         if (response != null)
             Debug.Log(
-                $"FinishTrainingRace ok. coinsGranted={response.coinsGranted}, raceCoinsBalance={response.raceCoinsBalance}");
+                $"FinishTrainingRace ok. score={response.score}, bestScore={response.bestScore}, isNewBest={response.isNewBest}, raceCoinsEarned={response.raceCoinsEarned}, raceCoinsBalance={response.raceCoinsBalance}");
     }
 }

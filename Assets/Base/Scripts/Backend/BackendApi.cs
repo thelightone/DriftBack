@@ -522,6 +522,58 @@ public class BackendApi
         onSuccess?.Invoke(response);
     }
 
+    public IEnumerator StartTrainingRace(
+        string accessToken,
+        string seasonId,
+        Action<SeasonRaceStartResponse> onSuccess,
+        Action<string> onError)
+    {
+        string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId) + "/training-races/start";
+        byte[] body = Encoding.UTF8.GetBytes("{}");
+
+        Debug.Log("=== TRAINING RACE START ===");
+        Debug.Log("POST " + url);
+
+        using var request = new UnityWebRequest(url, "POST");
+        request.uploadHandler = new UploadHandlerRaw(body);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return request.SendWebRequest();
+
+        Debug.Log("StartTrainingRace response code: " + request.responseCode);
+        Debug.Log("StartTrainingRace response text: " + request.downloadHandler.text);
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            onError?.Invoke(request.error + "\n" + request.downloadHandler.text);
+            yield break;
+        }
+
+        SeasonRaceStartResponse response = null;
+
+        try
+        {
+            response = JsonUtility.FromJson<SeasonRaceStartResponse>(request.downloadHandler.text);
+        }
+        catch (Exception e)
+        {
+            onError?.Invoke("StartTrainingRace parse error: " + e.Message);
+            yield break;
+        }
+
+        if (response == null || string.IsNullOrWhiteSpace(response.raceId) ||
+            string.IsNullOrWhiteSpace(response.seed))
+        {
+            onError?.Invoke("StartTrainingRace: invalid response");
+            yield break;
+        }
+
+        Debug.Log("=== TRAINING RACE START END ===");
+        onSuccess?.Invoke(response);
+    }
+
     public IEnumerator FinishSeasonRace(
         string accessToken,
         string seasonId,
@@ -575,12 +627,9 @@ public class BackendApi
         onSuccess?.Invoke(response);
     }
 
-    /// <summary>
-    /// Завершение тренировочного заезда: время круга и начисленные RC (бекенд может пересчитать монеты).
-    /// POST /v1/training/finish
-    /// </summary>
     public IEnumerator FinishTrainingRace(
         string accessToken,
+        string seasonId,
         TrainingRaceFinishRequest requestData,
         Action<TrainingRaceFinishResponse> onSuccess,
         Action<string> onError)
@@ -591,8 +640,14 @@ public class BackendApi
             yield break;
         }
 
+        if (string.IsNullOrWhiteSpace(seasonId))
+        {
+            onError?.Invoke("SEASON_ID_REQUIRED");
+            yield break;
+        }
+
         string json = JsonUtility.ToJson(requestData);
-        string url = _baseUrl + "/v1/training/finish";
+        string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId) + "/training-races/finish";
 
         Debug.Log("=== TRAINING RACE FINISH START ===");
         Debug.Log("POST " + url);
