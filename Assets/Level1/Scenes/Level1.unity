@@ -15383,7 +15383,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 564180946232940514, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
       propertyPath: requiredDistanceFromFinish
-      value: 250
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 627751525970619967, guid: fa574712b7576194fb3ffbddfcbd98ba, type: 3}
       propertyPath: m_AnchoredPosition.x

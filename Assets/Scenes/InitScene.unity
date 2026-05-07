@@ -817,7 +817,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &120099147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1022,6 +1022,14 @@ PrefabInstance:
       propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 11.100024
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 5.5499887
+      objectReference: {fileID: 0}
     - target: {fileID: 6885319714263566221, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -1135,9 +1143,21 @@ PrefabInstance:
       value: GarageCarItem (4)
       objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_text
+      value: "\u0412\u042B\u0411\u0420\u0410\u041D\u041E"
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSize
+      value: 60.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_fontAsset
       value: 
       objectReference: {fileID: 11400000, guid: 9f84047a1c705c647b86bf5adebf33af, type: 2}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 60.22
+      objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_sharedMaterial
       value: 
@@ -1662,6 +1682,14 @@ PrefabInstance:
       propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 11.100024
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 5.5499887
+      objectReference: {fileID: 0}
     - target: {fileID: 6885319714263566221, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -1775,9 +1803,21 @@ PrefabInstance:
       value: GarageCarItem (3)
       objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_text
+      value: "\u0412\u042B\u0411\u0420\u0410\u041D\u041E"
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSize
+      value: 60.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_fontAsset
       value: 
       objectReference: {fileID: 11400000, guid: 9f84047a1c705c647b86bf5adebf33af, type: 2}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 60.22
+      objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_sharedMaterial
       value: 
@@ -8335,6 +8375,14 @@ PrefabInstance:
       propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 11.100024
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 5.5499887
+      objectReference: {fileID: 0}
     - target: {fileID: 6885319714263566221, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -8448,9 +8496,21 @@ PrefabInstance:
       value: GarageCarItem (2)
       objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_text
+      value: "\u0412\u042B\u0411\u0420\u0410\u041D\u041E"
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSize
+      value: 60.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_fontAsset
       value: 
       objectReference: {fileID: 11400000, guid: 9f84047a1c705c647b86bf5adebf33af, type: 2}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 60.22
+      objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_sharedMaterial
       value: 
@@ -8487,6 +8547,14 @@ PrefabInstance:
     - target: {fileID: 2689161318428899875, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_hasFontAssetChanged
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 11.100024
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 5.5499887
       objectReference: {fileID: 0}
     - target: {fileID: 6885319714263566221, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_Pivot.x
@@ -8601,9 +8669,21 @@ PrefabInstance:
       value: GarageCarItem (5)
       objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_text
+      value: "\u0412\u042B\u0411\u0420\u0410\u041D\u041E"
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSize
+      value: 60.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_fontAsset
       value: 
       objectReference: {fileID: 11400000, guid: 9f84047a1c705c647b86bf5adebf33af, type: 2}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 60.22
+      objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_sharedMaterial
       value: 
@@ -8727,6 +8807,14 @@ PrefabInstance:
       propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 11.100024
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 5.5499887
+      objectReference: {fileID: 0}
     - target: {fileID: 6885319714263566221, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -8840,9 +8928,21 @@ PrefabInstance:
       value: GarageCarItem (1)
       objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_text
+      value: "\u0412\u042B\u0411\u0420\u0410\u041D\u041E"
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSize
+      value: 60.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_fontAsset
       value: 
       objectReference: {fileID: 11400000, guid: 9f84047a1c705c647b86bf5adebf33af, type: 2}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 60.22
+      objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_sharedMaterial
       value: 
@@ -11337,6 +11437,14 @@ PrefabInstance:
       propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 11.100024
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921366666098483385, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 5.5499887
+      objectReference: {fileID: 0}
     - target: {fileID: 6885319714263566221, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -11434,9 +11542,21 @@ PrefabInstance:
       value: GarageCarItem
       objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_text
+      value: "\u0412\u042B\u0411\u0420\u0410\u041D\u041E"
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSize
+      value: 60.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_fontAsset
       value: 
       objectReference: {fileID: 11400000, guid: 9f84047a1c705c647b86bf5adebf33af, type: 2}
+    - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 60.22
+      objectReference: {fileID: 0}
     - target: {fileID: 9157030359313220523, guid: 7ca5a737cae41dc419c2537c5b13f4ef, type: 3}
       propertyPath: m_sharedMaterial
       value: 
