@@ -22,7 +22,7 @@ public class CarController :MonoBehaviour
 	#region Properties of car parameters
 
 	float MaxMotorTorque;
-	float MaxSteerAngle { get { return CarConfig.MaxSteerAngle; } }
+	float MaxSteerAngle { get { return GlobalCarPhysicsTuning.TuneMaxSteerAngle (CarConfig.MaxSteerAngle); } }
 	DriveType DriveType { get { return CarConfig.DriveType; } }
 	bool AutomaticGearBox { get { return CarConfig.AutomaticGearBox; } }
 	AnimationCurve MotorTorqueFromRpmCurve { get { return CarConfig.MotorTorqueFromRpmCurve; } }
@@ -37,7 +37,7 @@ public class CarController :MonoBehaviour
 	float[] GearsRatio { get { return CarConfig.GearsRatio; } }
 	float MainRatio { get { return CarConfig.MainRatio; } }
 	float ReversGearRatio { get { return CarConfig.ReversGearRatio; } }
-	float MaxBrakeTorque { get { return CarConfig.MaxBrakeTorque; } }
+	float MaxBrakeTorque { get { return GlobalCarPhysicsTuning.TuneBrakeTorque (CarConfig.MaxBrakeTorque); } }
 
 
 	#endregion //Properties of car parameters
@@ -45,17 +45,17 @@ public class CarController :MonoBehaviour
 	#region Properties of drif Settings
 
 	bool EnableSteerAngleMultiplier { get { return CarConfig.EnableSteerAngleMultiplier; } }
-	float MinSteerAngleMultiplier { get { return CarConfig.MinSteerAngleMultiplier; } }
+	float MinSteerAngleMultiplier { get { return GlobalCarPhysicsTuning.TuneMinSteerAngleMultiplier (CarConfig.MinSteerAngleMultiplier); } }
 	float MaxSteerAngleMultiplier { get { return CarConfig.MaxSteerAngleMultiplier; } }
 	float MaxSpeedForMinAngleMultiplier { get { return CarConfig.MaxSpeedForMinAngleMultiplier; } }
-	float SteerAngleChangeSpeed { get { return CarConfig.SteerAngleChangeSpeed; } }
+	float SteerAngleChangeSpeed { get { return GlobalCarPhysicsTuning.TuneSteerAngleChangeSpeed (CarConfig.SteerAngleChangeSpeed); } }
 	float MinSpeedForSteerHelp { get { return CarConfig.MinSpeedForSteerHelp; } }
-	float HelpSteerPower { get { return CarConfig.HelpSteerPower; } }
-	float OppositeAngularVelocityHelpPower { get { return CarConfig.OppositeAngularVelocityHelpPower; } }
-	float PositiveAngularVelocityHelpPower { get { return CarConfig.PositiveAngularVelocityHelpPower; } }
-	float MaxAngularVelocityHelpAngle { get { return CarConfig.MaxAngularVelocityHelpAngle; } }
-	float AngularVelucityInMaxAngle { get { return CarConfig.AngularVelucityInMaxAngle; } }
-	float AngularVelucityInMinAngle { get { return CarConfig.AngularVelucityInMinAngle; } }
+	float HelpSteerPower { get { return GlobalCarPhysicsTuning.TuneHelpSteerPower (CarConfig.HelpSteerPower); } }
+	float OppositeAngularVelocityHelpPower { get { return GlobalCarPhysicsTuning.TuneOppositeAngularVelocityHelpPower (CarConfig.OppositeAngularVelocityHelpPower); } }
+	float PositiveAngularVelocityHelpPower { get { return GlobalCarPhysicsTuning.TunePositiveAngularVelocityHelpPower (CarConfig.PositiveAngularVelocityHelpPower); } }
+	float MaxAngularVelocityHelpAngle { get { return GlobalCarPhysicsTuning.TuneMaxAngularVelocityHelpAngle (CarConfig.MaxAngularVelocityHelpAngle); } }
+	float AngularVelucityInMaxAngle { get { return GlobalCarPhysicsTuning.TuneAngularVelucityInMaxAngle (CarConfig.AngularVelucityInMaxAngle); } }
+	float AngularVelucityInMinAngle { get { return GlobalCarPhysicsTuning.TuneAngularVelucityInMinAngle (CarConfig.AngularVelucityInMinAngle); } }
 
 	#endregion //Properties of drif Settings
 
@@ -95,6 +95,7 @@ public class CarController :MonoBehaviour
 	private void Awake ()
 	{
 		RB.centerOfMass = COM.localPosition;
+		GlobalCarPhysicsTuning.ApplyRigidbodyDamping (RB);
 
 		//Copy wheels in public property
 		Wheels = new Wheel[4] {
@@ -122,7 +123,7 @@ public class CarController :MonoBehaviour
 		}
 
 		//Divide the motor torque by the count of driving wheels
-		MaxMotorTorque = CarConfig.MaxMotorTorque / (LastDriveWheel - FirstDriveWheel + 1);
+		MaxMotorTorque = GlobalCarPhysicsTuning.TuneMotorTorque (CarConfig.MaxMotorTorque) / (LastDriveWheel - FirstDriveWheel + 1);
 
 
 		//Calculated gears ratio with main ratio
@@ -157,8 +158,8 @@ public class CarController :MonoBehaviour
 
 		CurrentSteerAngle = Mathf.MoveTowards (CurrentSteerAngle, targetSteerAngle, Time.deltaTime * SteerAngleChangeSpeed);
 
-		CurrentAcceleration = vertical;
-        InHandBrake = handBrake;
+		CurrentAcceleration = Mathf.MoveTowards (CurrentAcceleration, vertical, Time.deltaTime * GlobalCarPhysicsTuning.AccelerationInputChangeSpeed);
+		InHandBrake = handBrake;
 	}
 
 	private void Update ()
@@ -240,7 +241,7 @@ public class CarController :MonoBehaviour
 			var absAngle = Mathf.Abs (VelocityAngle);
 
 			//Get current procent help angle.
-			float currentAngularProcent = absAngle / MaxAngularVelocityHelpAngle;
+			float currentAngularProcent = Mathf.Clamp01 (absAngle / MaxAngularVelocityHelpAngle);
 
 			var currAngle = RB.angularVelocity;
 
