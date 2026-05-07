@@ -37,6 +37,11 @@ namespace PG_Physics.Wheel
 			}
 		}
 
+		void OnEnable ()
+		{
+			UpdateConfig ();
+		}
+
 		public void UpdateStiffness (float forward, float sideways)
 		{
 			var forwardFriction = WheelCollider.forwardFriction;
@@ -61,6 +66,8 @@ namespace PG_Physics.Wheel
 				Debug.LogError ("WheelCollider without attached RigidBody");
 				return;		
 			}
+			newConfig.ForwardFriction = global::GlobalCarPhysicsTuning.TuneForwardFrictionSetting (newConfig.ForwardFriction);
+			newConfig.SidewaysFriction = global::GlobalCarPhysicsTuning.TuneSidewaysFrictionSetting (newConfig.SidewaysFriction);
 			WheelConfig.ForwardFriction = newConfig.ForwardFriction;
 			WheelConfig.SidewaysFriction = newConfig.SidewaysFriction;
 
