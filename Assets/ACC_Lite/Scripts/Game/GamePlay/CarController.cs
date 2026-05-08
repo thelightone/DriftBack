@@ -16,6 +16,8 @@ public class CarController :MonoBehaviour
 	[SerializeField] Wheel RearRightWheel;
 	[SerializeField] Transform COM;
 	[SerializeField] List<ParticleSystem> BackFireParticles = new List<ParticleSystem>();
+	[Header ("Reverse lights (braking + reverse gear)")]
+	[SerializeField] List<GameObject> ReverseLightsOnBraking = new List<GameObject> ();
 	[SerializeField] [Range(0f, 90f)] float MaxTiltAngle = 45f;
 
 	[SerializeField] CarConfig CarConfig;
@@ -208,6 +210,21 @@ public class CarController :MonoBehaviour
 
 		LimitTilt ();
 
+		UpdateReverseLightsOnBraking ();
+
+	}
+
+	void UpdateReverseLightsOnBraking ()
+	{
+		bool reverseGearOrIntent = CurrentGear == -1
+			|| (!AutomaticGearBox && CurrentAcceleration < 0f && CarDirection <= 0);
+		bool on = InHandBrake || CurrentBrake > 0.01f || reverseGearOrIntent;
+		for (int i = 0; i < ReverseLightsOnBraking.Count; i++)
+		{
+			var go = ReverseLightsOnBraking[i];
+			if (go != null && go.activeSelf != on)
+				go.SetActive (on);
+		}
 	}
 
 	void LimitTilt ()
