@@ -8,7 +8,6 @@ public static class GlobalCarPhysicsTuning
 {
 	public const float MotorTorqueMultiplier = 0.82f;
 	public const float BrakeTorqueMultiplier = 0.8f;
-	public const float MaxSteerAngleLimit = 34f;
 	public const float SteerAngleChangeSpeedLimit = 120f;
 	public const float MinHighSpeedSteerMultiplier = 0.22f;
 	public const float HelpSteerPowerLimit = 0.45f;
@@ -35,7 +34,7 @@ public static class GlobalCarPhysicsTuning
 
 	public static float TuneMaxSteerAngle (float value)
 	{
-		return Mathf.Min (value, MaxSteerAngleLimit);
+		return value;
 	}
 
 	public static float TuneSteerAngleChangeSpeed (float value)
