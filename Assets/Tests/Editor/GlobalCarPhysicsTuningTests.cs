@@ -5,10 +5,10 @@ using UnityEngine;
 public class GlobalCarPhysicsTuningTests
 {
 	[Test]
-	public void ComfortProfileReducesOverpoweredAndInstantInputs ()
+	public void ComfortProfileSoftensOverpoweredInputsWithoutLimitingSteerAngle ()
 	{
 		Assert.That (GlobalCarPhysicsTuning.TuneMotorTorque (800f), Is.EqualTo (656f).Within (0.001f));
-		Assert.That (GlobalCarPhysicsTuning.TuneMaxSteerAngle (42f), Is.EqualTo (34f).Within (0.001f));
+		Assert.That (GlobalCarPhysicsTuning.TuneMaxSteerAngle (42f), Is.EqualTo (42f).Within (0.001f));
 		Assert.That (GlobalCarPhysicsTuning.TuneSteerAngleChangeSpeed (240f), Is.EqualTo (120f).Within (0.001f));
 		Assert.That (GlobalCarPhysicsTuning.TuneSteerAngleChangeSpeed (60f), Is.EqualTo (60f).Within (0.001f));
 	}
@@ -41,7 +41,7 @@ public static class GlobalCarPhysicsTuningSmokeRunner
 		try
 		{
 			AssertApproximately ("motor torque", GlobalCarPhysicsTuning.TuneMotorTorque (800f), 656f);
-			AssertApproximately ("max steer angle", GlobalCarPhysicsTuning.TuneMaxSteerAngle (42f), 34f);
+			AssertApproximately ("max steer angle", GlobalCarPhysicsTuning.TuneMaxSteerAngle (42f), 42f);
 			AssertApproximately ("steer speed", GlobalCarPhysicsTuning.TuneSteerAngleChangeSpeed (240f), 120f);
 			AssertApproximately ("help steer", GlobalCarPhysicsTuning.TuneHelpSteerPower (1f), 0.45f);
 			AssertApproximately ("negative angular help", GlobalCarPhysicsTuning.TunePositiveAngularVelocityHelpPower (-0.1f), 0f);
