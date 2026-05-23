@@ -1194,7 +1194,7 @@ MonoBehaviour:
     OppositeAngularVelocityHelpPower: 0.05
     PositiveAngularVelocityHelpPower: 0
     MaxAngularVelocityHelpAngle: 45
-    AngularVelucityInMaxAngle: 0.5
+    AngularVelucityInMaxAngle: 1.4
     AngularVelucityInMinAngle: 2
 --- !u!114 &114069533276462888
 MonoBehaviour:

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,8 +16,13 @@ public class CarController :MonoBehaviour
 	[SerializeField] Wheel RearRightWheel;
 	[SerializeField] Transform COM;
 	[SerializeField] List<ParticleSystem> BackFireParticles = new List<ParticleSystem>();
-	[Header ("Reverse lights (braking + reverse gear)")]
+	[Header ("Reverse lights (braking + reverse gear + drift decel)")]
 	[SerializeField] List<GameObject> ReverseLightsOnBraking = new List<GameObject> ();
+	[SerializeField] float reverseLightsDriftMinSpeedKmh = 10f;
+	[SerializeField] float reverseLightsDriftMinAngleDeg = 5f;
+	[SerializeField] float reverseLightsDriftMinSlip = 0.16f;
+	[SerializeField] float reverseLightsDriftDecelMps = 0.03f;
+	[SerializeField] [Range (0f, 1f)] float reverseLightsDriftMaxForwardInput = 0.22f;
 	[SerializeField] [Range(0f, 90f)] float MaxTiltAngle = 45f;
 
 	[SerializeField] CarConfig CarConfig;
@@ -94,6 +99,9 @@ public class CarController :MonoBehaviour
 
     int FirstDriveWheel;
 	int LastDriveWheel;
+
+	float _speedAtLastFixed;
+	bool _slowingThisFixedFrame;
 
 	private void Awake ()
 	{
@@ -174,8 +182,10 @@ public class CarController :MonoBehaviour
 
 	private void FixedUpdate ()
 	{
-
-		CurrentSpeed = RB.linearVelocity.magnitude;
+		float speedNow = RB.linearVelocity.magnitude;
+		_slowingThisFixedFrame = _speedAtLastFixed > 0f && speedNow < _speedAtLastFixed - reverseLightsDriftDecelMps;
+		_speedAtLastFixed = speedNow;
+		CurrentSpeed = speedNow;
 
 		UpdateSteerAngleLogic ();
 		UpdateRpmAndTorqueLogic ();
@@ -218,13 +228,25 @@ public class CarController :MonoBehaviour
 	{
 		bool reverseGearOrIntent = CurrentGear == -1
 			|| (!AutomaticGearBox && CurrentAcceleration < 0f && CarDirection <= 0);
-		bool on = InHandBrake || CurrentBrake > 0.01f || reverseGearOrIntent;
+		bool on = InHandBrake || CurrentBrake > 0.01f || reverseGearOrIntent || DriftWithDeceleration ();
 		for (int i = 0; i < ReverseLightsOnBraking.Count; i++)
 		{
 			var go = ReverseLightsOnBraking[i];
 			if (go != null && go.activeSelf != on)
 				go.SetActive (on);
 		}
+	}
+
+	bool DriftWithDeceleration ()
+	{
+		if (SpeedInHour < reverseLightsDriftMinSpeedKmh)
+			return false;
+		if (Mathf.Abs (VelocityAngle) < reverseLightsDriftMinAngleDeg)
+			return false;
+		if (CurrentMaxSlip < reverseLightsDriftMinSlip)
+			return false;
+		bool coastOrBrakeGas = CurrentAcceleration <= reverseLightsDriftMaxForwardInput;
+		return _slowingThisFixedFrame || coastOrBrakeGas;
 	}
 
 	void LimitTilt ()
