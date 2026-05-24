@@ -75,7 +75,10 @@ public class SceneLoader : MonoBehaviour
         }
         else
         {
-            RaceSessionContext.StartTraining(playerId, initData, telegramUserId, backendBaseUrl);
+            if (RaceSessionContext.BackendRacePrepared)
+                RaceSessionContext.MergeBridgeSnapshot(playerId, initData, telegramUserId, backendBaseUrl);
+            else
+                RaceSessionContext.StartTraining(playerId, initData, telegramUserId, backendBaseUrl);
         }
 
         Debug.Log(
