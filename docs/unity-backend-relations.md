@@ -197,6 +197,34 @@ Backend URL задаётся через `[SerializeField]` поле в двух 
 | Метод в BackendApi | `Health()` |
 | Вызывается из | Нигде (не используется в текущем коде) |
 
+### POST `/v1/training-races/start`
+
+**Назначение:** старт бесплатного training-заезда без требования активного турнира.
+
+| Параметр | Значение |
+|---|---|
+| Auth header | `Authorization: Bearer {accessToken}` |
+| Content-Type | `application/json` |
+| Request body | `{}` |
+| Response body | `TrainingRaceStartResponse` |
+| Метод в BackendApi | `StartTrainingRace()` |
+| Вызывается из | `AppManager.StartTrainingRaceFlow()` |
+
+Ответ содержит `raceId`, `seed`, `seasonId`, `mapId`. Клиент сохраняет `seasonId` из ответа в `RaceSessionContext` и затем использует его для finish endpoint.
+
+### POST `/v1/seasons/{seasonId}/training-races/finish`
+
+**Назначение:** отправка результата training-заезда.
+
+| Параметр | Значение |
+|---|---|
+| Auth header | `Authorization: Bearer {accessToken}` |
+| Content-Type | `application/json` |
+| Request body | `TrainingRaceFinishRequest` |
+| Response body | `TrainingRaceFinishResponse` |
+| Метод в BackendApi | `FinishTrainingRace()` |
+| Вызывается из | `RaceResultSubmitter` |
+
 ---
 
 ## DTO-модели
@@ -250,6 +278,12 @@ BuyCarResponse
 ├── carId: string
 ├── raceCoinsBalance: int                 # Обновлённый баланс
 └── garageRevision: int
+
+TrainingRaceStartResponse
+├── raceId: string                        # ID training run на бекенде
+├── seed: string                          # Серверный seed заезда
+├── seasonId: string                      # Сезон/контекст, нужный для finish
+└── mapId: string                         # Карта training-контекста
 ```
 
 ### Локальные модели (не отправляются на бекенд)
@@ -449,8 +483,14 @@ BuyCarFlow(CarDefinition car)
 | `InitData` | `TelegramBridge.GetInitData()` |
 | `TelegramUserId` | `TelegramUserData.id` |
 | `BackendBaseUrl` | `backendBaseUrl` из `AppManager` или `SceneLoader` |
+| `AccessToken` | JWT для backend race start/finish |
+| `SeasonId` | `seasonId` из backend start response |
+| `RaceId` | `raceId` из backend start response |
+| `Seed` | `seed` из backend start response |
+| `MapId` | `mapId` из backend training start response |
+| `BackendRacePrepared` | `true`, если backend уже выдал `raceId/seed` до загрузки гоночной сцены |
 
-> **Проблема:** `SceneLoader.PrepareRaceContext()` повторно создаёт `TelegramBridge` и читает `LocalProfileCache`, не используя `AppState`. Это может привести к рассинхронизации, если кэш устарел.
+`SceneLoader.PrepareRaceContext()` повторно создаёт `TelegramBridge` и читает `LocalProfileCache`, не используя `AppState`. Если backend race уже подготовлен (`BackendRacePrepared == true`), `SceneLoader` должен только обновить bridge snapshot через `MergeBridgeSnapshot(...)`, не вызывая `StartTraining()` / `StartTournament()`, иначе потеряются `SeasonId`, `RaceId` и `Seed`.
 
 Заполняется двумя путями:
 1. `AppManager.OnStartTrainingClicked()` / `OnStartTournamentClicked()` → использует `AppState`

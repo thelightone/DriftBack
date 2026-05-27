@@ -53,6 +53,15 @@ public class SeasonRaceStartResponse
 }
 
 [Serializable]
+public class TrainingRaceStartResponse
+{
+    public string raceId;
+    public string seed;
+    public string seasonId;
+    public string mapId;
+}
+
+[Serializable]
 public class SeasonRaceFinishRequest
 {
     public string raceId;
