@@ -11,6 +11,7 @@ public static class RaceSessionContext
     public static string SeasonId;
     public static string RaceId;
     public static string Seed;
+    public static string MapId;
     public static bool BackendRacePrepared;
 
     public static void StartTraining(string playerId, string initData, long telegramUserId, string backendBaseUrl)
@@ -63,13 +64,15 @@ public static class RaceSessionContext
         string playerId,
         string initData,
         long telegramUserId,
-        string backendBaseUrl)
+        string backendBaseUrl,
+        string mapId)
     {
         CurrentMode = RaceMode.Training;
         AccessToken = accessToken ?? "";
         SeasonId = seasonId ?? "";
         RaceId = raceId ?? "";
         Seed = seed ?? "";
+        MapId = mapId ?? "";
         PlayerId = playerId ?? "";
         InitData = initData ?? "";
         TelegramUserId = telegramUserId;
@@ -90,6 +93,7 @@ public static class RaceSessionContext
         SeasonId = "";
         RaceId = "";
         Seed = "";
+        MapId = "";
         BackendRacePrepared = false;
     }
 

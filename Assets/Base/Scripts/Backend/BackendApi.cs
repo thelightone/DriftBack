@@ -14,6 +14,11 @@ public class BackendApi
         Debug.Log("BackendApi created. Base URL: " + _baseUrl);
     }
 
+    public static string BuildTrainingRaceStartUrl(string baseUrl)
+    {
+        return baseUrl.TrimEnd('/') + "/v1/training-races/start";
+    }
+
     public IEnumerator AuthTelegram(
         TelegramAuthRequest requestData,
         System.Action<TelegramAuthResponse> onSuccess,
@@ -524,11 +529,10 @@ public class BackendApi
 
     public IEnumerator StartTrainingRace(
         string accessToken,
-        string seasonId,
-        Action<SeasonRaceStartResponse> onSuccess,
+        Action<TrainingRaceStartResponse> onSuccess,
         Action<string> onError)
     {
-        string url = _baseUrl + "/v1/seasons/" + Uri.EscapeDataString(seasonId) + "/training-races/start";
+        string url = BuildTrainingRaceStartUrl(_baseUrl);
         byte[] body = Encoding.UTF8.GetBytes("{}");
 
         Debug.Log("=== TRAINING RACE START ===");
@@ -551,11 +555,11 @@ public class BackendApi
             yield break;
         }
 
-        SeasonRaceStartResponse response = null;
+        TrainingRaceStartResponse response = null;
 
         try
         {
-            response = JsonUtility.FromJson<SeasonRaceStartResponse>(request.downloadHandler.text);
+            response = JsonUtility.FromJson<TrainingRaceStartResponse>(request.downloadHandler.text);
         }
         catch (Exception e)
         {
@@ -564,7 +568,8 @@ public class BackendApi
         }
 
         if (response == null || string.IsNullOrWhiteSpace(response.raceId) ||
-            string.IsNullOrWhiteSpace(response.seed))
+            string.IsNullOrWhiteSpace(response.seed) ||
+            string.IsNullOrWhiteSpace(response.seasonId))
         {
             onError?.Invoke("StartTrainingRace: invalid response");
             yield break;

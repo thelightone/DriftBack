@@ -1040,28 +1040,15 @@ public class AppManager : MonoBehaviour
 
     private IEnumerator StartTrainingRaceFlow()
     {
-        string seasonId = null;
-        string resolveErr = null;
-        yield return ResolveActiveSeasonIdForTournament(
-            id => seasonId = id,
-            e => resolveErr = e);
-
-        if (!string.IsNullOrEmpty(resolveErr) || string.IsNullOrEmpty(seasonId))
-        {
-            if (view != null)
-                view.ShowStatus("Training seasons: " + (resolveErr ?? "failed"));
-            yield break;
-        }
-
-        SeasonRaceStartResponse startResponse = null;
+        TrainingRaceStartResponse startResponse = null;
         string startErr = null;
         yield return _backendApi.StartTrainingRace(
             _state.AccessToken,
-            seasonId,
             r => startResponse = r,
             e => startErr = e);
 
-        if (!string.IsNullOrEmpty(startErr) || startResponse == null)
+        if (!string.IsNullOrEmpty(startErr) || startResponse == null ||
+            string.IsNullOrWhiteSpace(startResponse.seasonId))
         {
             if (view != null)
                 view.ShowStatus("Training race start: " + (startErr ?? "failed"));
@@ -1070,13 +1057,14 @@ public class AppManager : MonoBehaviour
 
         RaceSessionContext.BeginTrainingRace(
             _state.AccessToken,
-            seasonId,
+            startResponse.seasonId,
             startResponse.raceId,
             startResponse.seed,
             _state.PlayerId,
             _state.InitData,
             _state.TelegramUser != null ? _state.TelegramUser.id : 0,
-            backendBaseUrl);
+            backendBaseUrl,
+            startResponse.mapId);
 
         sceneLoader.StartTrainingGame();
     }
